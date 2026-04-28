@@ -197,16 +197,15 @@ async function apifyDataset(datasetId, token) {
   return r.json();
 }
 
-// ── Email scraping via CORS proxy ──────────────────────────
+// ── Email scraping via CORS proxies ───────────────────────
 const EMAIL_RE   = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
 const EMAIL_SKIP = /noreply|no-reply|example\.|wixpress|sentry|schema\.org|placeholder|\.(png|jpg|svg|gif)/i;
 
-async function fetchPage(url) {
-  const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+async function fetchWithTimeout(url, ms = 10000) {
   const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 9000);
+  const timer = setTimeout(() => ctrl.abort(), ms);
   try {
-    const r = await fetch(proxy, { signal: ctrl.signal });
+    const r = await fetch(url, { signal: ctrl.signal });
     clearTimeout(timer);
     return r.ok ? await r.text() : '';
   } catch {
@@ -215,13 +214,27 @@ async function fetchPage(url) {
   }
 }
 
+async function fetchPage(targetUrl) {
+  // Try corsproxy.io first, fall back to allorigins
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+  ];
+  for (const proxy of proxies) {
+    const html = await fetchWithTimeout(proxy, 10000);
+    // corsproxy returns the raw page; allorigins sometimes returns its own error page
+    if (html && html.length > 500 && !html.includes('"status":0')) return html;
+  }
+  return '';
+}
+
 async function scrapeEmail(website) {
   const base = website.replace(/\/$/, '');
   for (const path of ['', '/contact', '/contact-us', '/about']) {
     const html = await fetchPage(base + path);
     if (!html) continue;
-    const all   = [...new Set((html.match(EMAIL_RE) || []).filter(e => !EMAIL_SKIP.test(e)))];
-    const best  = all.find(e => /info|contact|sales|admin|office|hello|enquir/i.test(e)) || all[0];
+    const all  = [...new Set((html.match(EMAIL_RE) || []).filter(e => !EMAIL_SKIP.test(e)))];
+    const best = all.find(e => /info|contact|sales|admin|office|hello|enquir/i.test(e)) || all[0];
     if (best) return best;
   }
   return '';
@@ -231,13 +244,19 @@ async function scrapeEmailsBatch(places) {
   const targets = places.filter(p => p.website && !p.email);
   const total   = targets.length;
   if (!total) return;
-  const BATCH = 5;
+  let done = 0, found = 0;
+  const BATCH = 4;
   for (let i = 0; i < targets.length; i += BATCH) {
     const batch = targets.slice(i, i + BATCH);
-    setStatus(`Scraping emails… ${Math.min(i + BATCH, total)} / ${total}`);
-    await Promise.all(batch.map(async p => { p.email = await scrapeEmail(p.website); }));
-    if (i + BATCH < targets.length) await sleep(400);
+    await Promise.all(batch.map(async p => {
+      p.email = await scrapeEmail(p.website);
+      done++;
+      if (p.email) found++;
+      setStatus(`Scraping emails… ${done}/${total} checked, ${found} found`);
+    }));
+    if (i + BATCH < targets.length) await sleep(300);
   }
+  console.log(`Email scraping complete: ${found}/${total} found`);
 }
 
 // ── Main search ────────────────────────────────────────────
