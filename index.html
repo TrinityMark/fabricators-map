@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Leads Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; flex-direction: column; height: 100vh; }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
+      z-index: 1000;
+    }
+    header h1 { font-size: 1rem; font-weight: 600; white-space: nowrap; }
+    .badge {
+      background: #e94560; color: #fff;
+      border-radius: 12px; padding: 2px 10px;
+      font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+    }
+    .controls {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .controls label { font-size: 0.75rem; color: #aaa; margin-right: 2px; }
+    .controls input[type="text"] {
+      padding: 6px 10px; border: 1px solid #444; border-radius: 6px;
+      background: #2a2a3e; color: #fff; font-size: 0.85rem; width: 150px;
+    }
+    .controls input[type="text"]::placeholder { color: #888; }
+    .controls select {
+      padding: 6px 10px; border: 1px solid #444; border-radius: 6px;
+      background: #2a2a3e; color: #fff; font-size: 0.85rem;
+    }
+    .btn {
+      padding: 6px 16px; border: none; border-radius: 6px;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-go   { background: #e94560; color: #fff; }
+    .btn-csv  { background: #2ecc71; color: #fff; }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    #sidebar {
+      width: 320px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      background: #fff; border-right: 1px solid #ddd; overflow: hidden;
+    }
+    #sidebar-header {
+      padding: 9px 14px; background: #f0f0f0;
+      font-size: 0.78rem; color: #555; border-bottom: 1px solid #ddd;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #list { flex: 1; overflow-y: auto; }
+    .card {
+      padding: 11px 14px; border-bottom: 1px solid #eee;
+      cursor: pointer; transition: background 0.12s;
+    }
+    .card:hover, .card.active { background: #e8f0fe; }
+    .card-name { font-weight: 600; font-size: 0.88rem; color: #1a1a2e; margin-bottom: 2px; }
+    .card-addr { font-size: 0.76rem; color: #555; margin-bottom: 3px; }
+    .card-meta { font-size: 0.74rem; color: #777; display: flex; gap: 10px; }
+    .stars { color: #f5a623; }
+    .cat   { font-style: italic; }
+    .no-results { padding: 20px 14px; color: #888; font-size: 0.85rem; }
+
+    #map { flex: 1; }
+
+    /* Loading overlay */
+    #overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 9999;
+      flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    }
+    #overlay.active { display: flex; }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 5px solid rgba(255,255,255,0.3);
+      border-top-color: #e94560;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #status-msg {
+      color: #fff; font-size: 1rem; font-weight: 500;
+      background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 8px;
+    }
+
+    /* API key modal */
+    #key-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 10000;
+      align-items: center; justify-content: center;
+    }
+    #key-modal.active { display: flex; }
+    .key-box {
+      background: #fff; border-radius: 10px; padding: 28px 32px;
+      width: 420px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    .key-box h2 { font-size: 1rem; margin-bottom: 8px; color: #1a1a2e; }
+    .key-box p  { font-size: 0.82rem; color: #555; margin-bottom: 14px; line-height: 1.5; }
+    .key-box input {
+      width: 100%; padding: 8px 12px; border: 1px solid #ccc;
+      border-radius: 6px; font-size: 0.88rem; margin-bottom: 14px;
+      font-family: monospace;
+    }
+    .key-box .row { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* Popup */
+    .popup-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 5px; color: #1a1a2e; }
+    .popup-row   { font-size: 0.8rem; margin: 3px 0; color: #333; }
+    .popup-row a { color: #1a73e8; text-decoration: none; }
+    .popup-row a:hover { text-decoration: underline; }
+    .popup-rating { display: inline-block; background: #f5a623; color: #fff; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; font-weight: 700; margin-left: 6px; }
+    .popup-tag    { display: inline-block; background: #e8f0fe; color: #1a73e8; border-radius: 4px; padding: 1px 7px; font-size: 0.72rem; margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Business Leads Map</h1>
+  <span class="badge" id="count-badge">0 businesses</span>
+
+  <div class="controls">
+    <div>
+      <label>Suburb</label>
+      <input type="text" id="inp-suburb" placeholder="e.g. Brendale" />
+    </div>
+    <div>
+      <label>Business Type</label>
+      <input type="text" id="inp-type" placeholder="e.g. Fabricators" />
+    </div>
+    <div>
+      <label>Radius</label>
+      <select id="inp-distance">
+        <option value="5">5 km</option>
+        <option value="10">10 km</option>
+        <option value="15">15 km</option>
+        <option value="20" selected>20 km</option>
+        <option value="25">25 km</option>
+        <option value="30">30 km</option>
+        <option value="40">40 km</option>
+        <option value="50">50 km</option>
+      </select>
+    </div>
+    <button class="btn btn-go" id="btn-go" onclick="runSearch()">Go</button>
+    <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
+    <button class="btn" style="background:#444;color:#ccc;font-size:0.75rem;" onclick="promptApiKey()" title="Set Apify API key">&#9881; API Key</button>
+  </div>
+</header>
+
+<!-- API Key Modal -->
+<div id="key-modal">
+  <div class="key-box">
+    <h2>Apify API Key</h2>
+    <p>Enter your Apify API key. It will be saved in your browser and never sent anywhere except to Apify's servers.</p>
+    <input type="password" id="key-input" placeholder="apify_api_..." />
+    <div class="row">
+      <button class="btn" style="background:#ddd;color:#333;" onclick="document.getElementById('key-modal').classList.remove('active')">Cancel</button>
+      <button class="btn btn-go" onclick="saveKey()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="overlay">
+  <div class="spinner"></div>
+  <div id="status-msg">Starting search&hellip;</div>
+</div>
+
+<div class="main">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span id="sidebar-label">Enter a suburb and business type above</span>
+    </div>
+    <div id="list"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const ACTOR_ID = 'nwua9Gu5YrADL7ZDj';
+
+function getToken() { return localStorage.getItem('apify_token') || ''; }
+function setToken(t) { localStorage.setItem('apify_token', t); }
+
+// ── Map setup ──────────────────────────────────────────────
+const map = L.map('map').setView([-27.33, 152.99], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: 'abcd', maxZoom: 19,
+}).addTo(map);
+
+function makeIcon(color) {
+  return L.divIcon({
+    className: '',
+    html: `<svg width="26" height="34" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 22 14 22S28 23.333 28 14C28 6.268 21.732 0 14 0z"
+            fill="${color}" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="14" cy="14" r="5" fill="#fff"/></svg>`,
+    iconSize: [26, 34], iconAnchor: [13, 34], popupAnchor: [0, -34],
+  });
+}
+const iconDefault = makeIcon('#e94560');
+const iconActive  = makeIcon('#1a73e8');
+
+// ── State ──────────────────────────────────────────────────
+let currentPlaces  = [];
+let markers        = [];
+let activeIdx      = null;
+let centerLatLng   = null;
+
+// ── Haversine ──────────────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── Geocode suburb via Nominatim ───────────────────────────
+async function geocode(suburb) {
+  const q = encodeURIComponent(suburb + ', Australia');
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
+    headers: { 'Accept-Language': 'en' }
+  });
+  const d = await r.json();
+  if (!d.length) throw new Error(`Could not find suburb: ${suburb}`);
+  return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon), display: d[0].display_name };
+}
+
+// ── Overlay helpers ────────────────────────────────────────
+function showOverlay(msg) {
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('status-msg').textContent = msg;
+}
+function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
+function hideOverlay()  { document.getElementById('overlay').classList.remove('active'); }
+
+// ── Main search ────────────────────────────────────────────
+async function runSearch() {
+  const suburb   = document.getElementById('inp-suburb').value.trim();
+  const bizType  = document.getElementById('inp-type').value.trim();
+  const maxKm    = parseInt(document.getElementById('inp-distance').value);
+
+  if (!suburb || !bizType) { alert('Please enter both a suburb and a business type.'); return; }
+
+  const APIFY_TOKEN = getToken();
+  if (!APIFY_TOKEN) { promptApiKey(); return; }
+
+  document.getElementById('btn-go').disabled  = true;
+  document.getElementById('btn-csv').disabled = true;
+
+  try {
+    // 1. Geocode
+    showOverlay('Finding ' + suburb + '...');
+    const center = await geocode(suburb);
+    centerLatLng = center;
+    map.setView([center.lat, center.lng], 11);
+
+    // 2. Build search queries — suburb + some spread for larger radii
+    const queries = [`${bizType} ${suburb} Australia`];
+    if (maxKm >= 20) queries.push(`${bizType} near ${suburb} Australia`);
+
+    // 3. Start Apify run
+    setStatus('Starting Apify search...');
+    const runResp = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchStringsArray: queries,
+        maxCrawledPlacesPerSearch: 100,
+        language: 'en',
+        maxImages: 0,
+        scrapeReviews: false,
+      }),
+    });
+    if (!runResp.ok) throw new Error('Failed to start Apify run: ' + runResp.status);
+    const runData = await runResp.json();
+    const runId   = runData.data.id;
+
+    // 4. Poll for completion
+    setStatus('Searching Google Maps...');
+    let datasetId = null;
+    while (true) {
+      await sleep(6000);
+      const pollResp = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`);
+      const pollData = await pollResp.json();
+      const status   = pollData.data.status;
+      if (status === 'SUCCEEDED') { datasetId = pollData.data.defaultDatasetId; break; }
+      if (['FAILED','ABORTED','TIMED-OUT'].includes(status)) throw new Error('Search failed: ' + status);
+    }
+
+    // 5. Fetch results
+    setStatus('Loading results...');
+    const itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&format=json&clean=true&limit=500`);
+    const items = await itemsResp.json();
+
+    // 6. De-duplicate, filter by distance, enrich
+    const seen = new Set();
+    const places = [];
+    for (const p of items) {
+      const name = p.title || '';
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      const loc = p.location || {};
+      if (!loc.lat || !loc.lng) continue;
+      const dist = haversine(center.lat, center.lng, loc.lat, loc.lng);
+      if (dist > maxKm) continue;
+      places.push({
+        name,
+        street:   p.street   || '',
+        suburb:   p.city     || '',
+        phone:    p.phone    || '',
+        website:  p.website  || '',
+        email:    '',
+        rating:   p.totalScore || '',
+        category: p.categoryName || bizType,
+        lat:      loc.lat,
+        lng:      loc.lng,
+        dist:     Math.round(dist * 10) / 10,
+      });
+    }
+    places.sort((a, b) => a.dist - b.dist);
+
+    setStatus(`Found ${places.length} businesses — rendering...`);
+    renderResults(places, suburb, bizType, maxKm);
+
+  } catch (err) {
+    alert('Error: ' + err.message);
+    console.error(err);
+  } finally {
+    hideOverlay();
+    document.getElementById('btn-go').disabled = false;
+  }
+}
+
+// ── Render markers + sidebar ───────────────────────────────
+function renderResults(places, suburb, bizType, maxKm) {
+  // Clear old markers
+  markers.forEach(m => map.removeLayer(m));
+  markers  = [];
+  activeIdx = null;
+  currentPlaces = places;
+
+  document.getElementById('count-badge').textContent = places.length + ' businesses';
+  document.getElementById('sidebar-label').textContent =
+    `${bizType} within ${maxKm}km of ${suburb}`;
+  document.getElementById('btn-csv').disabled = places.length === 0;
+
+  // Add markers
+  places.forEach((p, i) => {
+    const m = L.marker([p.lat, p.lng], { icon: iconDefault })
+      .addTo(map)
+      .bindPopup(popupHtml(p), { maxWidth: 290 });
+    m.on('click', () => activate(i));
+    markers.push(m);
+  });
+
+  // Build sidebar
+  const listEl = document.getElementById('list');
+  listEl.innerHTML = '';
+  if (!places.length) {
+    listEl.innerHTML = '<div class="no-results">No results found. Try increasing the radius or adjusting the search.</div>';
+    return;
+  }
+  places.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.idx = i;
+    const addr  = [p.street, p.suburb].filter(Boolean).join(', ');
+    const stars = p.rating ? `<span class="stars">${ratingStars(p.rating)} ${p.rating}</span>` : '';
+    const dist  = `<span>${p.dist} km away</span>`;
+    card.innerHTML = `
+      <div class="card-name">${p.name}</div>
+      <div class="card-addr">${addr}</div>
+      <div class="card-meta">${stars}<span class="cat">${p.category}</span>${dist}</div>`;
+    card.addEventListener('click', () => activate(i));
+    listEl.appendChild(card);
+  });
+}
+
+function activate(idx) {
+  if (activeIdx !== null) markers[activeIdx].setIcon(iconDefault);
+  markers[idx].setIcon(iconActive);
+  markers[idx].openPopup();
+  map.setView([currentPlaces[idx].lat, currentPlaces[idx].lng], 15, { animate: true });
+  activeIdx = idx;
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  const card = document.querySelector(`.card[data-idx="${idx}"]`);
+  if (card) { card.classList.add('active'); card.scrollIntoView({ block: 'nearest' }); }
+}
+
+// ── Popup HTML ─────────────────────────────────────────────
+function popupHtml(p) {
+  const addr   = [p.street, p.suburb].filter(Boolean).join(', ');
+  const rating = p.rating ? `<span class="popup-rating">&#9733; ${p.rating}</span>` : '';
+  const phone  = p.phone   ? `<div class="popup-row">&#128222; <a href="tel:${p.phone}">${p.phone}</a></div>` : '';
+  const email  = p.email   ? `<div class="popup-row">&#9993; <a href="mailto:${p.email}">${p.email}</a></div>` : '';
+  const site   = p.website ? `<div class="popup-row">&#127760; <a href="${p.website}" target="_blank" rel="noopener">Visit website</a></div>` : '';
+  return `
+    <div class="popup-title">${p.name} ${rating}</div>
+    <span class="popup-tag">${p.category}</span>
+    <div class="popup-row">&#128205; ${addr} &mdash; <em>${p.dist} km</em></div>
+    ${phone}${email}${site}`;
+}
+
+function ratingStars(r) {
+  const f = Math.round(r);
+  return '★'.repeat(f) + '☆'.repeat(5 - f);
+}
+
+// ── Save CSV ───────────────────────────────────────────────
+function saveCSV() {
+  if (!currentPlaces.length) return;
+  const cols = ['Business Name','Street Address','Suburb','Email','Phone','Website','Google Rating','Distance (km)','Category'];
+  const rows = [cols.join(',')];
+  currentPlaces.forEach(p => {
+    rows.push([
+      csvVal(p.name), csvVal(p.street), csvVal(p.suburb),
+      csvVal(p.email), csvVal(p.phone), csvVal(p.website),
+      p.rating || '', p.dist, csvVal(p.category),
+    ].join(','));
+  });
+  const blob = new Blob([rows.join('
+')], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  const suburb = document.getElementById('inp-suburb').value.trim().replace(/\s+/g, '-').toLowerCase();
+  const type   = document.getElementById('inp-type').value.trim().replace(/\s+/g, '-').toLowerCase();
+  a.download = `leads-${type}-${suburb}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvVal(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  return s.includes(',') || s.includes('"') || s.includes('
+') ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── API Key modal ──────────────────────────────────────────
+function promptApiKey() {
+  const modal = document.getElementById('key-modal');
+  document.getElementById('key-input').value = getToken();
+  modal.classList.add('active');
+  document.getElementById('key-input').focus();
+}
+function saveKey() {
+  const val = document.getElementById('key-input').value.trim();
+  if (!val) { alert('Please enter an API key.'); return; }
+  setToken(val);
+  document.getElementById('key-modal').classList.remove('active');
+}
+
+// Show key modal on first load if no key stored
+window.addEventListener('load', () => {
+  if (!getToken()) promptApiKey();
+});
+</script>
+</body>
+</html>
