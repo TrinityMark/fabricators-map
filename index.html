@@ -10,16 +10,10 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; flex-direction: column; height: 100vh; }
 
     header {
-      background: #1a1a2e;
-      color: #fff;
+      background: #1a1a2e; color: #fff;
       padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
-      flex-wrap: wrap;
-      box-shadow: 0 2px 8px rgba(0,0,0,.5);
-      z-index: 1000;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,.5); z-index: 1000; flex-shrink: 0;
     }
     header h1 { font-size: 1rem; font-weight: 600; white-space: nowrap; }
     .badge {
@@ -27,29 +21,22 @@
       border-radius: 12px; padding: 2px 10px;
       font-size: 0.78rem; font-weight: 700; white-space: nowrap;
     }
-    .controls {
-      margin-left: auto;
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    }
+    .controls { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .controls label { font-size: 0.75rem; color: #aaa; margin-right: 2px; }
-    .controls input[type="text"] {
+    .ctrl-input {
       padding: 6px 10px; border: 1px solid #444; border-radius: 6px;
-      background: #2a2a3e; color: #fff; font-size: 0.85rem; width: 150px;
+      background: #2a2a3e; color: #fff; font-size: 0.85rem; width: 160px;
     }
-    .controls input[type="text"]::placeholder { color: #888; }
-    .controls select {
-      padding: 6px 10px; border: 1px solid #444; border-radius: 6px;
-      background: #2a2a3e; color: #fff; font-size: 0.85rem;
-    }
+    .ctrl-input::placeholder { color: #888; }
     .btn {
       padding: 6px 16px; border: none; border-radius: 6px;
-      font-size: 0.85rem; font-weight: 600; cursor: pointer;
-      transition: opacity 0.15s;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
     }
-    .btn:hover { opacity: 0.85; }
+    .btn:hover   { opacity: 0.85; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-go   { background: #e94560; color: #fff; }
-    .btn-csv  { background: #2ecc71; color: #fff; }
+    .btn-go  { background: #e94560; color: #fff; }
+    .btn-csv { background: #2ecc71; color: #fff; }
+    .btn-key { background: #444; color: #ccc; font-size: 0.75rem; }
 
     .main { display: flex; flex: 1; overflow: hidden; }
 
@@ -61,17 +48,13 @@
     #sidebar-header {
       padding: 9px 14px; background: #f0f0f0;
       font-size: 0.78rem; color: #555; border-bottom: 1px solid #ddd;
-      display: flex; justify-content: space-between; align-items: center;
     }
     #list { flex: 1; overflow-y: auto; }
-    .card {
-      padding: 11px 14px; border-bottom: 1px solid #eee;
-      cursor: pointer; transition: background 0.12s;
-    }
+    .card { padding: 11px 14px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.12s; }
     .card:hover, .card.active { background: #e8f0fe; }
     .card-name { font-weight: 600; font-size: 0.88rem; color: #1a1a2e; margin-bottom: 2px; }
     .card-addr { font-size: 0.76rem; color: #555; margin-bottom: 3px; }
-    .card-meta { font-size: 0.74rem; color: #777; display: flex; gap: 10px; }
+    .card-meta { font-size: 0.74rem; color: #777; display: flex; gap: 10px; flex-wrap: wrap; }
     .stars { color: #f5a623; }
     .cat   { font-style: italic; }
     .no-results { padding: 20px 14px; color: #888; font-size: 0.85rem; }
@@ -81,21 +64,20 @@
     /* Loading overlay */
     #overlay {
       display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.55); z-index: 9999;
+      background: rgba(0,0,0,0.6); z-index: 9999;
       flex-direction: column; align-items: center; justify-content: center; gap: 16px;
     }
     #overlay.active { display: flex; }
     .spinner {
       width: 48px; height: 48px;
-      border: 5px solid rgba(255,255,255,0.3);
-      border-top-color: #e94560;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
+      border: 5px solid rgba(255,255,255,0.3); border-top-color: #e94560;
+      border-radius: 50%; animation: spin 0.9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     #status-msg {
       color: #fff; font-size: 1rem; font-weight: 500;
-      background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 8px;
+      background: rgba(0,0,0,0.5); padding: 8px 24px; border-radius: 8px;
+      max-width: 340px; text-align: center;
     }
 
     /* API key modal */
@@ -113,8 +95,7 @@
     .key-box p  { font-size: 0.82rem; color: #555; margin-bottom: 14px; line-height: 1.5; }
     .key-box input {
       width: 100%; padding: 8px 12px; border: 1px solid #ccc;
-      border-radius: 6px; font-size: 0.88rem; margin-bottom: 14px;
-      font-family: monospace;
+      border-radius: 6px; font-size: 0.88rem; margin-bottom: 14px; font-family: monospace;
     }
     .key-box .row { display: flex; gap: 8px; justify-content: flex-end; }
 
@@ -129,46 +110,13 @@
 </head>
 <body>
 
-<header>
-  <h1>Business Leads Map</h1>
-  <span class="badge" id="count-badge">0 businesses</span>
-
-  <div class="controls">
-    <div>
-      <label>Suburb</label>
-      <input type="text" id="inp-suburb" placeholder="e.g. Brendale" />
-    </div>
-    <div>
-      <label>Business Type</label>
-      <input type="text" id="inp-type" placeholder="e.g. Fabricators" />
-    </div>
-    <div>
-      <label>Radius</label>
-      <select id="inp-distance">
-        <option value="5">5 km</option>
-        <option value="10">10 km</option>
-        <option value="15">15 km</option>
-        <option value="20" selected>20 km</option>
-        <option value="25">25 km</option>
-        <option value="30">30 km</option>
-        <option value="40">40 km</option>
-        <option value="50">50 km</option>
-      </select>
-    </div>
-    <button class="btn btn-go" id="btn-go" onclick="runSearch()">Go</button>
-    <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
-    <button class="btn" style="background:#444;color:#ccc;font-size:0.75rem;" onclick="promptApiKey()" title="Set Apify API key">&#9881; API Key</button>
-  </div>
-</header>
-
-<!-- API Key Modal -->
 <div id="key-modal">
   <div class="key-box">
     <h2>Apify API Key</h2>
-    <p>Enter your Apify API key. It will be saved in your browser and never sent anywhere except to Apify's servers.</p>
+    <p>Enter your Apify API key. It will be saved in your browser and never sent anywhere except Apify's servers when you run a search.</p>
     <input type="password" id="key-input" placeholder="apify_api_..." />
     <div class="row">
-      <button class="btn" style="background:#ddd;color:#333;" onclick="document.getElementById('key-modal').classList.remove('active')">Cancel</button>
+      <button class="btn" style="background:#ddd;color:#333;" onclick="closeKeyModal()">Cancel</button>
       <button class="btn btn-go" onclick="saveKey()">Save</button>
     </div>
   </div>
@@ -179,11 +127,21 @@
   <div id="status-msg">Starting search&hellip;</div>
 </div>
 
+<header>
+  <h1>Business Leads Map</h1>
+  <span class="badge" id="count-badge">0 businesses</span>
+  <div class="controls">
+    <div><label>Suburb</label><input class="ctrl-input" type="text" id="inp-suburb" placeholder="e.g. Brendale" /></div>
+    <div><label>Business Type</label><input class="ctrl-input" type="text" id="inp-type" placeholder="e.g. Fabricators" /></div>
+    <button class="btn btn-go"  id="btn-go"  onclick="runSearch()">Go</button>
+    <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
+    <button class="btn btn-key" onclick="promptApiKey()">&#9881; API Key</button>
+  </div>
+</header>
+
 <div class="main">
   <div id="sidebar">
-    <div id="sidebar-header">
-      <span id="sidebar-label">Enter a suburb and business type above</span>
-    </div>
+    <div id="sidebar-header"><span id="sidebar-label">Enter a suburb and business type above</span></div>
     <div id="list"></div>
   </div>
   <div id="map"></div>
@@ -191,12 +149,13 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const ACTOR_ID = 'nwua9Gu5YrADL7ZDj';
+const ACTOR_MAPS    = 'nwua9Gu5YrADL7ZDj';
+const ACTOR_CONTACT = 'lukaskrivka~contact-info-scraper';
 
 function getToken() { return localStorage.getItem('apify_token') || ''; }
 function setToken(t) { localStorage.setItem('apify_token', t); }
 
-// ── Map setup ──────────────────────────────────────────────
+// ── Map ────────────────────────────────────────────────────
 const map = L.map('map').setView([-27.33, 152.99], 11);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -216,32 +175,11 @@ function makeIcon(color) {
 const iconDefault = makeIcon('#e94560');
 const iconActive  = makeIcon('#1a73e8');
 
-// ── State ──────────────────────────────────────────────────
-let currentPlaces  = [];
-let markers        = [];
-let activeIdx      = null;
-let centerLatLng   = null;
+let currentPlaces = [], markers = [], activeIdx = null;
 
-// ── Haversine ──────────────────────────────────────────────
-function haversine(lat1, lng1, lat2, lng2) {
-  const R = 6371, toRad = d => d * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
+// ── Helpers ────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ── Geocode suburb via Nominatim ───────────────────────────
-async function geocode(suburb) {
-  const q = encodeURIComponent(suburb + ', Australia');
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
-    headers: { 'Accept-Language': 'en' }
-  });
-  const d = await r.json();
-  if (!d.length) throw new Error(`Could not find suburb: ${suburb}`);
-  return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon), display: d[0].display_name };
-}
-
-// ── Overlay helpers ────────────────────────────────────────
 function showOverlay(msg) {
   document.getElementById('overlay').classList.add('active');
   document.getElementById('status-msg').textContent = msg;
@@ -249,97 +187,154 @@ function showOverlay(msg) {
 function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
 function hideOverlay()  { document.getElementById('overlay').classList.remove('active'); }
 
+async function geocode(suburb) {
+  const q = encodeURIComponent(suburb + ', Australia');
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
+    headers: { 'Accept-Language': 'en' }
+  });
+  const d = await r.json();
+  if (!d.length) throw new Error('Could not locate suburb: ' + suburb);
+  return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) };
+}
+
+async function apifyRun(actorId, input, token) {
+  const r = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`Apify run failed (${r.status}): ${txt.slice(0, 200)}`);
+  }
+  return (await r.json()).data.id;
+}
+
+async function apifyWait(runId, token, label) {
+  while (true) {
+    await sleep(6000);
+    const r = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
+    const d = (await r.json()).data;
+    setStatus(label + ' (' + (d.stats?.durationMillis ? Math.round(d.stats.durationMillis/1000) + 's' : '...') + ')');
+    if (d.status === 'SUCCEEDED') return d.defaultDatasetId;
+    if (['FAILED','ABORTED','TIMED-OUT'].includes(d.status)) throw new Error('Actor run ' + d.status);
+  }
+}
+
+async function apifyDataset(datasetId, token) {
+  const r = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&format=json&clean=true&limit=500`);
+  if (!r.ok) throw new Error('Failed to fetch dataset: ' + r.status);
+  return r.json();
+}
+
 // ── Main search ────────────────────────────────────────────
 async function runSearch() {
-  const suburb   = document.getElementById('inp-suburb').value.trim();
-  const bizType  = document.getElementById('inp-type').value.trim();
-  const maxKm    = parseInt(document.getElementById('inp-distance').value);
-
+  const suburb  = document.getElementById('inp-suburb').value.trim();
+  const bizType = document.getElementById('inp-type').value.trim();
   if (!suburb || !bizType) { alert('Please enter both a suburb and a business type.'); return; }
 
-  const APIFY_TOKEN = getToken();
-  if (!APIFY_TOKEN) { promptApiKey(); return; }
+  const token = getToken();
+  if (!token) { promptApiKey(); return; }
 
   document.getElementById('btn-go').disabled  = true;
   document.getElementById('btn-csv').disabled = true;
 
   try {
-    // 1. Geocode
-    showOverlay('Finding ' + suburb + '...');
+    // 1. Geocode so we can centre the map
+    showOverlay('Locating ' + suburb + '...');
     const center = await geocode(suburb);
-    centerLatLng = center;
     map.setView([center.lat, center.lng], 11);
 
-    // 2. Build search queries — suburb + some spread for larger radii
-    const queries = [`${bizType} ${suburb} Australia`];
-    if (maxKm >= 20) queries.push(`${bizType} near ${suburb} Australia`);
-
-    // 3. Start Apify run
-    setStatus('Starting Apify search...');
-    const runResp = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        searchStringsArray: queries,
-        maxCrawledPlacesPerSearch: 100,
-        language: 'en',
-        maxImages: 0,
-        scrapeReviews: false,
-      }),
-    });
-    if (!runResp.ok) throw new Error('Failed to start Apify run: ' + runResp.status);
-    const runData = await runResp.json();
-    const runId   = runData.data.id;
-
-    // 4. Poll for completion
+    // 2. Run Google Maps scraper with multiple queries for broad area coverage
     setStatus('Searching Google Maps...');
-    let datasetId = null;
-    while (true) {
-      await sleep(6000);
-      const pollResp = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`);
-      const pollData = await pollResp.json();
-      const status   = pollData.data.status;
-      if (status === 'SUCCEEDED') { datasetId = pollData.data.defaultDatasetId; break; }
-      if (['FAILED','ABORTED','TIMED-OUT'].includes(status)) throw new Error('Search failed: ' + status);
-    }
+    const queries = [
+      `${bizType} ${suburb} Australia`,
+      `${bizType} near ${suburb} Australia`,
+      `${bizType} ${suburb} surrounding suburbs Australia`,
+    ];
+    const mapsRunId = await apifyRun(ACTOR_MAPS, {
+      searchStringsArray: queries,
+      maxCrawledPlacesPerSearch: 100,
+      language: 'en',
+      maxImages: 0,
+      scrapeReviews: false,
+    }, token);
 
-    // 5. Fetch results
-    setStatus('Loading results...');
-    const itemsResp = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&format=json&clean=true&limit=500`);
-    const items = await itemsResp.json();
+    setStatus('Searching Google Maps...');
+    const mapsDatasetId = await apifyWait(mapsRunId, token, 'Searching Google Maps');
 
-    // 6. De-duplicate, filter by distance, enrich
+    // 3. Fetch and deduplicate results
+    setStatus('Loading business data...');
+    const rawItems = await apifyDataset(mapsDatasetId, token);
+
     const seen = new Set();
     const places = [];
-    for (const p of items) {
+    for (const p of rawItems) {
       const name = p.title || '';
-      if (!name || seen.has(name)) continue;
-      seen.add(name);
+      if (!name || seen.has(name.toLowerCase())) continue;
+      seen.add(name.toLowerCase());
       const loc = p.location || {};
       if (!loc.lat || !loc.lng) continue;
-      const dist = haversine(center.lat, center.lng, loc.lat, loc.lng);
-      if (dist > maxKm) continue;
       places.push({
         name,
-        street:   p.street   || '',
-        suburb:   p.city     || '',
-        phone:    p.phone    || '',
-        website:  p.website  || '',
-        email:    '',
-        rating:   p.totalScore || '',
-        category: p.categoryName || bizType,
+        street:   p.street        || '',
+        suburb:   p.city          || p.neighborhood || '',
+        state:    p.state         || '',
+        phone:    p.phone         || '',
+        website:  p.website       || '',
+        email:    p.email         || '',
+        owner:    '',
+        rating:   p.totalScore    || '',
+        category: p.categoryName  || bizType,
         lat:      loc.lat,
         lng:      loc.lng,
-        dist:     Math.round(dist * 10) / 10,
       });
     }
-    places.sort((a, b) => a.dist - b.dist);
+
+    // 4. Scrape emails from business websites using contact-info-scraper
+    const withSites = places.filter(p => p.website);
+    if (withSites.length) {
+      setStatus(`Scraping emails from ${withSites.length} websites...`);
+      try {
+        const contactRunId = await apifyRun(ACTOR_CONTACT, {
+          startUrls: withSites.map(p => ({ url: p.website })),
+          maxDepth: 1,
+          sameDomain: true,
+          maxRequestsPerCrawl: withSites.length * 4,
+        }, token);
+
+        const contactDatasetId = await apifyWait(contactRunId, token, 'Scraping emails');
+        const contactItems = await apifyDataset(contactDatasetId, token);
+
+        // Build a URL→email map
+        const emailMap = {};
+        const SKIP = /noreply|no-reply|example|test|wixpress|sentry|schema\.org|placeholder/i;
+        for (const c of contactItems) {
+          const baseUrl = (c.url || '').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase();
+          const emails = (c.emails || []).filter(e => !SKIP.test(e));
+          if (emails.length && !emailMap[baseUrl]) emailMap[baseUrl] = emails[0];
+        }
+
+        // Match back to places
+        for (const p of places) {
+          if (!p.email && p.website) {
+            const key = p.website.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase();
+            // Try exact domain match first, then partial
+            const found = emailMap[key] ||
+              Object.entries(emailMap).find(([k]) => k.startsWith(key.split('/')[0]))?.[1] || '';
+            p.email = found;
+          }
+        }
+      } catch (e) {
+        console.warn('Email scraping failed (non-fatal):', e.message);
+      }
+    }
 
     setStatus(`Found ${places.length} businesses — rendering...`);
-    renderResults(places, suburb, bizType, maxKm);
+    renderResults(places, suburb, bizType);
 
   } catch (err) {
-    alert('Error: ' + err.message);
+    alert('Search error: ' + err.message);
     console.error(err);
   } finally {
     hideOverlay();
@@ -347,33 +342,26 @@ async function runSearch() {
   }
 }
 
-// ── Render markers + sidebar ───────────────────────────────
-function renderResults(places, suburb, bizType, maxKm) {
-  // Clear old markers
+// ── Render ─────────────────────────────────────────────────
+function renderResults(places, suburb, bizType) {
   markers.forEach(m => map.removeLayer(m));
-  markers  = [];
-  activeIdx = null;
-  currentPlaces = places;
+  markers = []; activeIdx = null; currentPlaces = places;
 
   document.getElementById('count-badge').textContent = places.length + ' businesses';
-  document.getElementById('sidebar-label').textContent =
-    `${bizType} within ${maxKm}km of ${suburb}`;
+  document.getElementById('sidebar-label').textContent = `${bizType} near ${suburb}`;
   document.getElementById('btn-csv').disabled = places.length === 0;
 
-  // Add markers
   places.forEach((p, i) => {
     const m = L.marker([p.lat, p.lng], { icon: iconDefault })
-      .addTo(map)
-      .bindPopup(popupHtml(p), { maxWidth: 290 });
+      .addTo(map).bindPopup(popupHtml(p), { maxWidth: 290 });
     m.on('click', () => activate(i));
     markers.push(m);
   });
 
-  // Build sidebar
   const listEl = document.getElementById('list');
   listEl.innerHTML = '';
   if (!places.length) {
-    listEl.innerHTML = '<div class="no-results">No results found. Try increasing the radius or adjusting the search.</div>';
+    listEl.innerHTML = '<div class="no-results">No results. Try a different suburb or business type.</div>';
     return;
   }
   places.forEach((p, i) => {
@@ -382,11 +370,10 @@ function renderResults(places, suburb, bizType, maxKm) {
     card.dataset.idx = i;
     const addr  = [p.street, p.suburb].filter(Boolean).join(', ');
     const stars = p.rating ? `<span class="stars">${ratingStars(p.rating)} ${p.rating}</span>` : '';
-    const dist  = `<span>${p.dist} km away</span>`;
     card.innerHTML = `
       <div class="card-name">${p.name}</div>
       <div class="card-addr">${addr}</div>
-      <div class="card-meta">${stars}<span class="cat">${p.category}</span>${dist}</div>`;
+      <div class="card-meta">${stars}<span class="cat">${p.category}</span></div>`;
     card.addEventListener('click', () => activate(i));
     listEl.appendChild(card);
   });
@@ -403,7 +390,6 @@ function activate(idx) {
   if (card) { card.classList.add('active'); card.scrollIntoView({ block: 'nearest' }); }
 }
 
-// ── Popup HTML ─────────────────────────────────────────────
 function popupHtml(p) {
   const addr   = [p.street, p.suburb].filter(Boolean).join(', ');
   const rating = p.rating ? `<span class="popup-rating">&#9733; ${p.rating}</span>` : '';
@@ -413,64 +399,62 @@ function popupHtml(p) {
   return `
     <div class="popup-title">${p.name} ${rating}</div>
     <span class="popup-tag">${p.category}</span>
-    <div class="popup-row">&#128205; ${addr} &mdash; <em>${p.dist} km</em></div>
+    <div class="popup-row">&#128205; ${addr}</div>
     ${phone}${email}${site}`;
 }
 
 function ratingStars(r) {
   const f = Math.round(r);
-  return '★'.repeat(f) + '☆'.repeat(5 - f);
+  return '\u2605'.repeat(f) + '\u2606'.repeat(5 - f);
 }
 
 // ── Save CSV ───────────────────────────────────────────────
 function saveCSV() {
   if (!currentPlaces.length) return;
-  const cols = ['Business Name','Street Address','Suburb','Email','Phone','Website','Google Rating','Distance (km)','Category'];
+  const cols = ['Business Name','Street Address','Suburb','Email','Phone','Website','Owner / Contact','Google Rating','Category'];
   const rows = [cols.join(',')];
   currentPlaces.forEach(p => {
     rows.push([
-      csvVal(p.name), csvVal(p.street), csvVal(p.suburb),
-      csvVal(p.email), csvVal(p.phone), csvVal(p.website),
-      p.rating || '', p.dist, csvVal(p.category),
+      csv(p.name), csv(p.street), csv(p.suburb),
+      csv(p.email), csv(p.phone), csv(p.website),
+      csv(p.owner), p.rating || '', csv(p.category),
     ].join(','));
   });
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  const suburb = document.getElementById('inp-suburb').value.trim().replace(/\s+/g, '-').toLowerCase();
-  const type   = document.getElementById('inp-type').value.trim().replace(/\s+/g, '-').toLowerCase();
-  a.download = `leads-${type}-${suburb}.csv`;
+  const s = document.getElementById('inp-suburb').value.trim().replace(/\s+/g, '-').toLowerCase();
+  const t = document.getElementById('inp-type').value.trim().replace(/\s+/g, '-').toLowerCase();
+  a.download = `leads-${t}-${s}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-function csvVal(v) {
-  if (v === null || v === undefined) return '';
+function csv(v) {
+  if (!v) return '';
   const s = String(v);
-  return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
 }
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ── API Key modal ──────────────────────────────────────────
 function promptApiKey() {
-  const modal = document.getElementById('key-modal');
   document.getElementById('key-input').value = getToken();
-  modal.classList.add('active');
-  document.getElementById('key-input').focus();
+  document.getElementById('key-modal').classList.add('active');
+  setTimeout(() => document.getElementById('key-input').focus(), 50);
 }
+function closeKeyModal() { document.getElementById('key-modal').classList.remove('active'); }
 function saveKey() {
-  const val = document.getElementById('key-input').value.trim();
-  if (!val) { alert('Please enter an API key.'); return; }
-  setToken(val);
-  document.getElementById('key-modal').classList.remove('active');
+  const v = document.getElementById('key-input').value.trim();
+  if (!v) { alert('Please enter your API key.'); return; }
+  setToken(v); closeKeyModal();
 }
-
-// Show key modal on first load if no key stored
-window.addEventListener('load', () => {
-  if (!getToken()) promptApiKey();
+// Close modal on backdrop click
+document.getElementById('key-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeKeyModal();
 });
+
+window.addEventListener('load', () => { if (!getToken()) promptApiKey(); });
 </script>
 </body>
 </html>
