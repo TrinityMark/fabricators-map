@@ -16,39 +16,21 @@
       box-shadow: 0 2px 8px rgba(0,0,0,.5); z-index: 1000; flex-shrink: 0;
     }
     header h1 { font-size: 1rem; font-weight: 600; white-space: nowrap; }
-    .badge {
-      background: #e94560; color: #fff;
-      border-radius: 12px; padding: 2px 10px;
-      font-size: 0.78rem; font-weight: 700; white-space: nowrap;
-    }
+    .badge { background: #e94560; color: #fff; border-radius: 12px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
     .controls { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .controls label { font-size: 0.75rem; color: #aaa; margin-right: 2px; }
-    .ctrl-input {
-      padding: 6px 10px; border: 1px solid #444; border-radius: 6px;
-      background: #2a2a3e; color: #fff; font-size: 0.85rem; width: 160px;
-    }
+    .ctrl-input { padding: 6px 10px; border: 1px solid #444; border-radius: 6px; background: #2a2a3e; color: #fff; font-size: 0.85rem; width: 160px; }
     .ctrl-input::placeholder { color: #888; }
-    .btn {
-      padding: 6px 16px; border: none; border-radius: 6px;
-      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
-    }
-    .btn:hover   { opacity: 0.85; }
+    .btn { padding: 6px 16px; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+    .btn:hover { opacity: 0.85; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-go  { background: #e94560; color: #fff; }
     .btn-csv { background: #2ecc71; color: #fff; }
     .btn-key { background: #444; color: #ccc; font-size: 0.75rem; }
 
     .main { display: flex; flex: 1; overflow: hidden; }
-
-    #sidebar {
-      width: 320px; flex-shrink: 0;
-      display: flex; flex-direction: column;
-      background: #fff; border-right: 1px solid #ddd; overflow: hidden;
-    }
-    #sidebar-header {
-      padding: 9px 14px; background: #f0f0f0;
-      font-size: 0.78rem; color: #555; border-bottom: 1px solid #ddd;
-    }
+    #sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #ddd; overflow: hidden; }
+    #sidebar-header { padding: 9px 14px; background: #f0f0f0; font-size: 0.78rem; color: #555; border-bottom: 1px solid #ddd; }
     #list { flex: 1; overflow-y: auto; }
     .card { padding: 11px 14px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.12s; }
     .card:hover, .card.active { background: #e8f0fe; }
@@ -58,54 +40,28 @@
     .stars { color: #f5a623; }
     .cat   { font-style: italic; }
     .no-results { padding: 20px 14px; color: #888; font-size: 0.85rem; }
-
     #map { flex: 1; }
 
-    /* Loading overlay */
-    #overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); z-index: 9999;
-      flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-    }
+    #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
     #overlay.active { display: flex; }
-    .spinner {
-      width: 48px; height: 48px;
-      border: 5px solid rgba(255,255,255,0.3); border-top-color: #e94560;
-      border-radius: 50%; animation: spin 0.9s linear infinite;
-    }
+    .spinner { width: 48px; height: 48px; border: 5px solid rgba(255,255,255,0.3); border-top-color: #e94560; border-radius: 50%; animation: spin 0.9s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #status-msg {
-      color: #fff; font-size: 1rem; font-weight: 500;
-      background: rgba(0,0,0,0.5); padding: 8px 24px; border-radius: 8px;
-      max-width: 340px; text-align: center;
-    }
+    #status-msg { color: #fff; font-size: 1rem; font-weight: 500; background: rgba(0,0,0,0.5); padding: 8px 24px; border-radius: 8px; max-width: 360px; text-align: center; }
 
-    /* API key modal */
-    #key-modal {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); z-index: 10000;
-      align-items: center; justify-content: center;
-    }
+    #key-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
     #key-modal.active { display: flex; }
-    .key-box {
-      background: #fff; border-radius: 10px; padding: 28px 32px;
-      width: 420px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,.4);
-    }
+    .key-box { background: #fff; border-radius: 10px; padding: 28px 32px; width: 420px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
     .key-box h2 { font-size: 1rem; margin-bottom: 8px; color: #1a1a2e; }
     .key-box p  { font-size: 0.82rem; color: #555; margin-bottom: 14px; line-height: 1.5; }
-    .key-box input {
-      width: 100%; padding: 8px 12px; border: 1px solid #ccc;
-      border-radius: 6px; font-size: 0.88rem; margin-bottom: 14px; font-family: monospace;
-    }
+    .key-box input { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.88rem; margin-bottom: 14px; font-family: monospace; }
     .key-box .row { display: flex; gap: 8px; justify-content: flex-end; }
 
-    /* Popup */
     .popup-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 5px; color: #1a1a2e; }
-    .popup-row   { font-size: 0.8rem; margin: 3px 0; color: #333; }
+    .popup-row { font-size: 0.8rem; margin: 3px 0; color: #333; }
     .popup-row a { color: #1a73e8; text-decoration: none; }
     .popup-row a:hover { text-decoration: underline; }
     .popup-rating { display: inline-block; background: #f5a623; color: #fff; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; font-weight: 700; margin-left: 6px; }
-    .popup-tag    { display: inline-block; background: #e8f0fe; color: #1a73e8; border-radius: 4px; padding: 1px 7px; font-size: 0.72rem; margin-bottom: 5px; }
+    .popup-tag { display: inline-block; background: #e8f0fe; color: #1a73e8; border-radius: 4px; padding: 1px 7px; font-size: 0.72rem; margin-bottom: 5px; }
   </style>
 </head>
 <body>
@@ -113,7 +69,7 @@
 <div id="key-modal">
   <div class="key-box">
     <h2>Apify API Key</h2>
-    <p>Enter your Apify API key. It will be saved in your browser and never sent anywhere except Apify's servers when you run a search.</p>
+    <p>Enter your Apify API key. It is saved in your browser only and sent exclusively to Apify when you run a search.</p>
     <input type="password" id="key-input" placeholder="apify_api_..." />
     <div class="row">
       <button class="btn" style="background:#ddd;color:#333;" onclick="closeKeyModal()">Cancel</button>
@@ -124,7 +80,7 @@
 
 <div id="overlay">
   <div class="spinner"></div>
-  <div id="status-msg">Starting search&hellip;</div>
+  <div id="status-msg">Starting&hellip;</div>
 </div>
 
 <header>
@@ -149,9 +105,9 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const ACTOR_MAPS    = 'nwua9Gu5YrADL7ZDj';
-const ACTOR_CONTACT = 'lukaskrivka~contact-info-scraper';
+const ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj';
 
+// ── Token storage ──────────────────────────────────────────
 function getToken() { return localStorage.getItem('apify_token') || ''; }
 function setToken(t) { localStorage.setItem('apify_token', t); }
 
@@ -177,54 +133,111 @@ const iconActive  = makeIcon('#1a73e8');
 
 let currentPlaces = [], markers = [], activeIdx = null;
 
-// ── Helpers ────────────────────────────────────────────────
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// ── Utilities ──────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function showOverlay(msg) { document.getElementById('overlay').classList.add('active'); document.getElementById('status-msg').textContent = msg; }
+function setStatus(msg)   { document.getElementById('status-msg').textContent = msg; }
+function hideOverlay()    { document.getElementById('overlay').classList.remove('active'); }
 
-function showOverlay(msg) {
-  document.getElementById('overlay').classList.add('active');
-  document.getElementById('status-msg').textContent = msg;
-}
-function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
-function hideOverlay()  { document.getElementById('overlay').classList.remove('active'); }
-
+// ── Geocode with Nominatim ─────────────────────────────────
 async function geocode(suburb) {
-  const q = encodeURIComponent(suburb + ', Australia');
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
-    headers: { 'Accept-Language': 'en' }
-  });
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(suburb + ', Australia')}&format=json&limit=1`, { headers: { 'Accept-Language': 'en' } });
   const d = await r.json();
   if (!d.length) throw new Error('Could not locate suburb: ' + suburb);
   return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) };
 }
 
+// ── Get surrounding suburb names via Overpass API ──────────
+async function getNearbySuburbs(lat, lng, targetSuburb) {
+  const radiusM = 25000; // 25 km
+  const query = `[out:json][timeout:20];(node["place"~"suburb|town|village"]["name"](around:${radiusM},${lat},${lng}););out;`;
+  try {
+    const r = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query),
+    });
+    const d = await r.json();
+    const names = d.elements.map(e => e.tags && e.tags.name).filter(Boolean);
+    // Deduplicate, keep target suburb first, limit to 12
+    const unique = [targetSuburb, ...names.filter(n => n.toLowerCase() !== targetSuburb.toLowerCase())];
+    return [...new Set(unique)].slice(0, 12);
+  } catch (e) {
+    console.warn('Overpass failed, falling back to single suburb:', e.message);
+    return [targetSuburb];
+  }
+}
+
+// ── Apify helpers ──────────────────────────────────────────
 async function apifyRun(actorId, input, token) {
   const r = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!r.ok) {
-    const txt = await r.text();
-    throw new Error(`Apify run failed (${r.status}): ${txt.slice(0, 200)}`);
-  }
+  if (!r.ok) throw new Error(`Apify start failed (${r.status}): ` + (await r.text()).slice(0, 200));
   return (await r.json()).data.id;
 }
 
 async function apifyWait(runId, token, label) {
   while (true) {
     await sleep(6000);
-    const r = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
-    const d = (await r.json()).data;
-    setStatus(label + ' (' + (d.stats?.durationMillis ? Math.round(d.stats.durationMillis/1000) + 's' : '...') + ')');
+    const r  = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
+    const d  = (await r.json()).data;
+    const secs = d.stats && d.stats.durationMillis ? Math.round(d.stats.durationMillis / 1000) : '…';
+    setStatus(`${label} (${secs}s)`);
     if (d.status === 'SUCCEEDED') return d.defaultDatasetId;
-    if (['FAILED','ABORTED','TIMED-OUT'].includes(d.status)) throw new Error('Actor run ' + d.status);
+    if (['FAILED','ABORTED','TIMED-OUT'].includes(d.status)) throw new Error('Actor run ended: ' + d.status);
   }
 }
 
 async function apifyDataset(datasetId, token) {
   const r = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&format=json&clean=true&limit=500`);
-  if (!r.ok) throw new Error('Failed to fetch dataset: ' + r.status);
+  if (!r.ok) throw new Error('Dataset fetch failed: ' + r.status);
   return r.json();
+}
+
+// ── Email scraping via CORS proxy ──────────────────────────
+const EMAIL_RE   = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+const EMAIL_SKIP = /noreply|no-reply|example\.|wixpress|sentry|schema\.org|placeholder|\.(png|jpg|svg|gif)/i;
+
+async function fetchPage(url) {
+  const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 9000);
+  try {
+    const r = await fetch(proxy, { signal: ctrl.signal });
+    clearTimeout(timer);
+    return r.ok ? await r.text() : '';
+  } catch {
+    clearTimeout(timer);
+    return '';
+  }
+}
+
+async function scrapeEmail(website) {
+  const base = website.replace(/\/$/, '');
+  for (const path of ['', '/contact', '/contact-us', '/about']) {
+    const html = await fetchPage(base + path);
+    if (!html) continue;
+    const all   = [...new Set((html.match(EMAIL_RE) || []).filter(e => !EMAIL_SKIP.test(e)))];
+    const best  = all.find(e => /info|contact|sales|admin|office|hello|enquir/i.test(e)) || all[0];
+    if (best) return best;
+  }
+  return '';
+}
+
+async function scrapeEmailsBatch(places) {
+  const targets = places.filter(p => p.website && !p.email);
+  const total   = targets.length;
+  if (!total) return;
+  const BATCH = 5;
+  for (let i = 0; i < targets.length; i += BATCH) {
+    const batch = targets.slice(i, i + BATCH);
+    setStatus(`Scraping emails… ${Math.min(i + BATCH, total)} / ${total}`);
+    await Promise.all(batch.map(async p => { p.email = await scrapeEmail(p.website); }));
+    if (i + BATCH < targets.length) await sleep(400);
+  }
 }
 
 // ── Main search ────────────────────────────────────────────
@@ -240,97 +253,64 @@ async function runSearch() {
   document.getElementById('btn-csv').disabled = true;
 
   try {
-    // 1. Geocode so we can centre the map
-    showOverlay('Locating ' + suburb + '...');
+    // 1. Geocode
+    showOverlay('Locating ' + suburb + '…');
     const center = await geocode(suburb);
     map.setView([center.lat, center.lng], 11);
 
-    // 2. Run Google Maps scraper with multiple queries for broad area coverage
-    setStatus('Searching Google Maps...');
-    const queries = [
-      `${bizType} ${suburb} Australia`,
-      `${bizType} near ${suburb} Australia`,
-      `${bizType} ${suburb} surrounding suburbs Australia`,
-    ];
-    const mapsRunId = await apifyRun(ACTOR_MAPS, {
+    // 2. Find surrounding suburbs
+    setStatus('Finding surrounding suburbs…');
+    const suburbs = await getNearbySuburbs(center.lat, center.lng, suburb);
+    console.log('Searching suburbs:', suburbs);
+
+    // 3. Build one search query per suburb (same approach as the original scraper)
+    const queries = suburbs.map(s => `${bizType} ${s} Australia`);
+
+    // 4. Run Google Maps scraper
+    setStatus(`Searching Google Maps across ${suburbs.length} suburbs…`);
+    const runId = await apifyRun(ACTOR_MAPS, {
       searchStringsArray: queries,
-      maxCrawledPlacesPerSearch: 100,
+      maxCrawledPlacesPerSearch: 20,
       language: 'en',
       maxImages: 0,
       scrapeReviews: false,
     }, token);
 
-    setStatus('Searching Google Maps...');
-    const mapsDatasetId = await apifyWait(mapsRunId, token, 'Searching Google Maps');
+    const datasetId = await apifyWait(runId, token, 'Searching Google Maps');
 
-    // 3. Fetch and deduplicate results
-    setStatus('Loading business data...');
-    const rawItems = await apifyDataset(mapsDatasetId, token);
-
-    const seen = new Set();
+    // 5. Fetch & deduplicate
+    setStatus('Loading results…');
+    const raw    = await apifyDataset(datasetId, token);
+    const seen   = new Set();
     const places = [];
-    for (const p of rawItems) {
-      const name = p.title || '';
+    for (const p of raw) {
+      const name = (p.title || '').trim();
       if (!name || seen.has(name.toLowerCase())) continue;
       seen.add(name.toLowerCase());
       const loc = p.location || {};
       if (!loc.lat || !loc.lng) continue;
       places.push({
         name,
-        street:   p.street        || '',
-        suburb:   p.city          || p.neighborhood || '',
-        state:    p.state         || '',
-        phone:    p.phone         || '',
-        website:  p.website       || '',
-        email:    p.email         || '',
+        street:   p.street       || '',
+        suburb:   p.city         || p.neighborhood || '',
+        phone:    p.phone        || '',
+        website:  p.website      || '',
+        email:    '',
         owner:    '',
-        rating:   p.totalScore    || '',
-        category: p.categoryName  || bizType,
+        rating:   p.totalScore   || '',
+        category: p.categoryName || bizType,
         lat:      loc.lat,
         lng:      loc.lng,
       });
     }
 
-    // 4. Scrape emails from business websites using contact-info-scraper
-    const withSites = places.filter(p => p.website);
-    if (withSites.length) {
-      setStatus(`Scraping emails from ${withSites.length} websites...`);
-      try {
-        const contactRunId = await apifyRun(ACTOR_CONTACT, {
-          startUrls: withSites.map(p => ({ url: p.website })),
-          maxDepth: 1,
-          sameDomain: true,
-          maxRequestsPerCrawl: withSites.length * 4,
-        }, token);
-
-        const contactDatasetId = await apifyWait(contactRunId, token, 'Scraping emails');
-        const contactItems = await apifyDataset(contactDatasetId, token);
-
-        // Build a URL→email map
-        const emailMap = {};
-        const SKIP = /noreply|no-reply|example|test|wixpress|sentry|schema\.org|placeholder/i;
-        for (const c of contactItems) {
-          const baseUrl = (c.url || '').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase();
-          const emails = (c.emails || []).filter(e => !SKIP.test(e));
-          if (emails.length && !emailMap[baseUrl]) emailMap[baseUrl] = emails[0];
-        }
-
-        // Match back to places
-        for (const p of places) {
-          if (!p.email && p.website) {
-            const key = p.website.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase();
-            // Try exact domain match first, then partial
-            const found = emailMap[key] ||
-              Object.entries(emailMap).find(([k]) => k.startsWith(key.split('/')[0]))?.[1] || '';
-            p.email = found;
-          }
-        }
-      } catch (e) {
-        console.warn('Email scraping failed (non-fatal):', e.message);
-      }
+    // 6. Scrape emails from business websites
+    if (places.some(p => p.website)) {
+      setStatus('Scraping emails from websites…');
+      await scrapeEmailsBatch(places);
     }
 
-    setStatus(`Found ${places.length} businesses — rendering...`);
+    setStatus(`Found ${places.length} businesses — loading map…`);
     renderResults(places, suburb, bizType);
 
   } catch (err) {
@@ -348,8 +328,8 @@ function renderResults(places, suburb, bizType) {
   markers = []; activeIdx = null; currentPlaces = places;
 
   document.getElementById('count-badge').textContent = places.length + ' businesses';
-  document.getElementById('sidebar-label').textContent = `${bizType} near ${suburb}`;
-  document.getElementById('btn-csv').disabled = places.length === 0;
+  document.getElementById('sidebar-label').textContent = `${bizType} near ${suburb} (${places.length})`;
+  document.getElementById('btn-csv').disabled = (places.length === 0);
 
   places.forEach((p, i) => {
     const m = L.marker([p.lat, p.lng], { icon: iconDefault })
@@ -366,8 +346,7 @@ function renderResults(places, suburb, bizType) {
   }
   places.forEach((p, i) => {
     const card = document.createElement('div');
-    card.className = 'card';
-    card.dataset.idx = i;
+    card.className = 'card'; card.dataset.idx = i;
     const addr  = [p.street, p.suburb].filter(Boolean).join(', ');
     const stars = p.rating ? `<span class="stars">${ratingStars(p.rating)} ${p.rating}</span>` : '';
     card.innerHTML = `
@@ -396,11 +375,9 @@ function popupHtml(p) {
   const phone  = p.phone   ? `<div class="popup-row">&#128222; <a href="tel:${p.phone}">${p.phone}</a></div>` : '';
   const email  = p.email   ? `<div class="popup-row">&#9993; <a href="mailto:${p.email}">${p.email}</a></div>` : '';
   const site   = p.website ? `<div class="popup-row">&#127760; <a href="${p.website}" target="_blank" rel="noopener">Visit website</a></div>` : '';
-  return `
-    <div class="popup-title">${p.name} ${rating}</div>
+  return `<div class="popup-title">${p.name} ${rating}</div>
     <span class="popup-tag">${p.category}</span>
-    <div class="popup-row">&#128205; ${addr}</div>
-    ${phone}${email}${site}`;
+    <div class="popup-row">&#128205; ${addr}</div>${phone}${email}${site}`;
 }
 
 function ratingStars(r) {
@@ -413,22 +390,18 @@ function saveCSV() {
   if (!currentPlaces.length) return;
   const cols = ['Business Name','Street Address','Suburb','Email','Phone','Website','Owner / Contact','Google Rating','Category'];
   const rows = [cols.join(',')];
-  currentPlaces.forEach(p => {
-    rows.push([
-      csv(p.name), csv(p.street), csv(p.suburb),
-      csv(p.email), csv(p.phone), csv(p.website),
-      csv(p.owner), p.rating || '', csv(p.category),
-    ].join(','));
-  });
+  currentPlaces.forEach(p => rows.push([
+    csv(p.name), csv(p.street), csv(p.suburb), csv(p.email),
+    csv(p.phone), csv(p.website), csv(p.owner),
+    p.rating || '', csv(p.category),
+  ].join(',')));
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob) });
   const s = document.getElementById('inp-suburb').value.trim().replace(/\s+/g, '-').toLowerCase();
   const t = document.getElementById('inp-type').value.trim().replace(/\s+/g, '-').toLowerCase();
   a.download = `leads-${t}-${s}.csv`;
   a.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(a.href);
 }
 
 function csv(v) {
@@ -449,11 +422,7 @@ function saveKey() {
   if (!v) { alert('Please enter your API key.'); return; }
   setToken(v); closeKeyModal();
 }
-// Close modal on backdrop click
-document.getElementById('key-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeKeyModal();
-});
-
+document.getElementById('key-modal').addEventListener('click', e => { if (e.target === document.getElementById('key-modal')) closeKeyModal(); });
 window.addEventListener('load', () => { if (!getToken()) promptApiKey(); });
 </script>
 </body>
