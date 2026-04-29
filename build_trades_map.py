@@ -385,9 +385,10 @@ async function runSearch() {
 
   try {
     const locationLabel = street ? `${street}, ${suburb}` : suburb;
-    showOverlay('Locating ' + locationLabel + '…');
-    const center = await geocode(street ? `${street} ${suburb} Australia` : suburb);
-    map.setView([center.lat, center.lng], street ? 16 : 13);
+    showOverlay('Locating ' + suburb + '…');
+    // Always geocode the suburb — Nominatim can't reliably locate individual streets
+    const center = await geocode(suburb);
+    map.setView([center.lat, center.lng], street ? 15 : 13);
 
     let queries, perQuery, places;
 
