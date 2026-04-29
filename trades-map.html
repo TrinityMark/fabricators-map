@@ -190,7 +190,7 @@
 <script>
 const ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj';
 
-const TRADES = [["Air Conditioning", "air conditioning hvac"], ["Auto Electricians", "auto electrician"], ["Builders", "builder construction"], ["Cabinet Makers", "cabinet maker joiner"], ["Car Mechanics", "car mechanic"], ["Carpenters", "carpenter joinery"], ["Concreters", "concreter concrete"], ["Diesel Mechanics", "diesel mechanic"], ["Earthmoving", "earthmoving excavation"], ["Electricians", "electrician"], ["Fabricators", "fabricator steel metal"], ["Fencing", "fencing contractor"], ["Flooring", "flooring carpet"], ["Glaziers", "glazier glass"], ["Landscapers", "landscaper gardener"], ["Locksmiths", "locksmith"], ["Painters", "painter decorator"], ["Panel Beaters", "panel beater smash repair"], ["Pest Control", "pest control"], ["Plasterers", "plasterer"], ["Plumbers", "plumber"], ["Roofers", "roofer roofing"], ["Solar", "solar installer"], ["Tilers", "tiler tiling"]];
+const TRADES = [["Air Conditioning", "air conditioning", "air conditioning"], ["Auto Electricians", "auto electrical", "auto electr"], ["Builders", "builder", "builder"], ["Cabinet Makers", "cabinet maker", "cabinet maker"], ["Car Mechanics", "car mechanic", "car mechanic"], ["Carpenters", "carpenter", "carpenter"], ["Concreters", "concreter", "concret"], ["Diesel Mechanics", "diesel mechanic", "diesel"], ["Earthmoving", "earthmoving", "earthmov"], ["Electricians", "electrician", "electrician"], ["Fabricators", "fabricator", "fabricat"], ["Fencing", "fencing", "fencing"], ["Flooring", "flooring", "flooring"], ["Glaziers", "glazier", "glazier"], ["Landscapers", "landscaper", "landscap"], ["Locksmiths", "locksmith", "locksmith"], ["Painters", "painter", "painter"], ["Panel Beaters", "panel beater", "panel beat"], ["Pest Control", "pest control", "pest control"], ["Plasterers", "plasterer", "plaster"], ["Plumbers", "plumber", "plumber"], ["Roofers", "roofer", "roofer"], ["Solar", "solar installer", "solar"], ["Tilers", "tiler", "tiler"]];
 const COLOURS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22", "#34495e", "#e91e63", "#00bcd4", "#8bc34a", "#ff5722", "#795548", "#ff9800", "#673ab7", "#607d8b", "#009688", "#c0392b", "#2980b9", "#27ae60", "#d35400", "#16a085", "#8e44ad", "#2c3e50"];
 
 // Map category label → colour
@@ -347,7 +347,7 @@ async function runSearch() {
     // More results per query when fewer categories are selected
     const perQuery = Math.min(100, Math.max(20, Math.round(400 / selected.length)));
 
-    const queries = selected.map(([, q]) => `${q} ${suburb} Australia`);
+    const queries = selected.map(([, searchQuery]) => `${searchQuery} ${suburb} Australia`);
 
     setStatus(`Searching ${selected.length} trade categor${selected.length === 1 ? 'y' : 'ies'} in ${suburb}… (up to ${perQuery} results each)`);
     const runId     = await apifyRun({
@@ -372,11 +372,11 @@ async function runSearch() {
       const loc = p.location || {};
       if (!loc.lat || !loc.lng) continue;
 
-      // Match searchString back to a TRADE label
+      // Match searchString back to a TRADE label using the unique match keyword (index 2)
       const search = (p.searchString || '').toLowerCase();
-      let tradeLabel = p.categoryName || 'Other';
-      for (const [label, q] of TRADES) {
-        if (q.split(' ').some(word => search.includes(word))) {
+      let tradeLabel = 'Other';
+      for (const [label, , matchKey] of TRADES) {
+        if (search.includes(matchKey.toLowerCase())) {
           tradeLabel = label; break;
         }
       }
