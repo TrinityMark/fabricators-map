@@ -25,6 +25,7 @@
     .btn:hover { opacity: 0.85; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-go  { background: #e94560; color: #fff; }
+    .btn-csv { background: #2ecc71; color: #fff; }
     .btn-key { background: #444; color: #ccc; font-size: 0.75rem; }
     .btn-other { background: #2a2a3e; color: #aaa; font-size: 0.75rem; border: 1px solid #444; }
 
@@ -118,6 +119,7 @@
     <div><label>Suburb</label><input class="ctrl-input" type="text" id="inp-suburb" placeholder="e.g. Brendale" /></div>
     <button class="btn btn-go" id="btn-go" onclick="runSearch()">Go</button>
     <a href="index.html"><button class="btn btn-other">&#8592; Leads Search</button></a>
+    <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
     <button class="btn btn-key" onclick="promptApiKey()">&#9881; API Key</button>
   </div>
 </header>
@@ -280,6 +282,7 @@ async function runSearch() {
     }
 
     renderResults(places, suburb);
+    document.getElementById('btn-csv').disabled = places.length === 0;
   } catch (err) {
     alert('Error: ' + err.message);
     console.error(err);
@@ -390,6 +393,29 @@ function highlightCatRow(label) {
   document.querySelectorAll('.cat-row').forEach(r => r.classList.remove('active'));
   const row = document.querySelector(`.cat-row[data-cat="${label}"]`);
   if (row) { row.classList.add('active'); row.scrollIntoView({ block: 'nearest' }); }
+}
+
+// ── Save CSV ───────────────────────────────────────────────
+function saveCSV() {
+  if (!allPlaces.length) return;
+  const cols = ['Business Name','Street Address','Suburb','Phone','Website','Google Rating','Trade Category'];
+  const rows = [cols.join(',')];
+  allPlaces.forEach(p => rows.push([
+    csv(p.name), csv(p.street), csv(p.suburb),
+    csv(p.phone), csv(p.website), p.rating || '', csv(p.category),
+  ].join(',')));
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob) });
+  const s = document.getElementById('inp-suburb').value.trim().replace(/\s+/g, '-').toLowerCase();
+  a.download = `trades-${s}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function csv(v) {
+  if (!v) return '';
+  const s = String(v);
+  return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 // ── Key modal ──────────────────────────────────────────────
