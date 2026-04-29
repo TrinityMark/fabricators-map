@@ -445,6 +445,24 @@ async function runSearch() {
     }
 
     // isStreetMode controls sidebar title only; both modes now use TRADES categorisation
+    if (street) {
+      // Keep only businesses whose street address actually contains the searched street.
+      // Strip common road-type suffixes so "Terrence Road" matches "Terrence Rd" etc.
+      const streetKey = street.toLowerCase()
+        .replace(/\\b(road|rd|street|st|avenue|ave|drive|dr|court|ct|place|pl|lane|ln|way|close|cl|crescent|cres|boulevard|blvd|highway|hwy|parade|pde)\\b/g, '')
+        .replace(/\\s+/g, ' ').trim();
+      // First meaningful word e.g. "terrence" from "terrence road"
+      const keyword = streetKey.split(' ')[0];
+      if (keyword) {
+        const unfiltered = places;
+        places = unfiltered.filter(p => (p.street || '').toLowerCase().includes(keyword));
+        if (places.length === 0 && unfiltered.length > 0) {
+          alert(`No results had "${street}" in their address.\\nShowing all ${unfiltered.length} nearby results instead.`);
+          places = unfiltered;
+        }
+      }
+    }
+
     renderResults(places, locationLabel, !!street);
     document.getElementById('btn-csv').disabled = places.length === 0;
   } catch (err) {
