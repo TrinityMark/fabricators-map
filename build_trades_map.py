@@ -393,10 +393,13 @@ async function runSearch() {
     let queries, perQuery, places;
 
     if (street) {
-      // ── Street mode: one query, all business types ─────────
-      queries  = [`${street} ${suburb} Australia`];
-      perQuery = 100;
-      setStatus(`Finding all businesses on ${street}…`);
+      // ── Street mode: all trades, street included in each query ─
+      // Searching "electrician Terrence Road Brendale Australia" finds
+      // businesses of that type on/near the street. Run all 24 trades
+      // with a small per-trade limit (street is short).
+      perQuery = 10;
+      queries  = TRADES.map(([, searchQuery]) => `${searchQuery} ${street} ${suburb} Australia`);
+      setStatus(`Searching all trades on ${street}…`);
     } else {
       // ── Suburb mode: one query per selected trade ──────────
       const selected = getSelectedTrades();
@@ -421,17 +424,11 @@ async function runSearch() {
       const loc = p.location || {};
       if (!loc.lat || !loc.lng) continue;
 
-      let category;
-      if (street) {
-        // Street mode: use the raw Google Maps category directly
-        category = p.categoryName || 'Other';
-      } else {
-        // Suburb mode: match back to our trade label via unique keyword
-        const search = (p.searchString || '').toLowerCase();
-        category = 'Other';
-        for (const [label, , matchKey] of TRADES) {
-          if (search.includes(matchKey.toLowerCase())) { category = label; break; }
-        }
+      // Match back to our trade label via the search query keyword (both modes)
+      const search = (p.searchString || '').toLowerCase();
+      let category = 'Other';
+      for (const [label, , matchKey] of TRADES) {
+        if (search.includes(matchKey.toLowerCase())) { category = label; break; }
       }
 
       places.push({
@@ -447,6 +444,7 @@ async function runSearch() {
       });
     }
 
+    // isStreetMode controls sidebar title only; both modes now use TRADES categorisation
     renderResults(places, locationLabel, !!street);
     document.getElementById('btn-csv').disabled = places.length === 0;
   } catch (err) {
@@ -530,17 +528,10 @@ function buildSidebar(groups, locationLabel, isStreetMode) {
   const listEl = document.getElementById('cat-list');
   listEl.innerHTML = '';
 
-  // In street mode: show every category that actually appears, sorted by count desc.
-  // In suburb mode: show all TRADES categories (even 0-count ones), sorted by count desc.
-  let sorted;
-  if (isStreetMode) {
-    sorted = Object.keys(groups)
-      .map(label => ({ label, count: groups[label].length }))
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-  } else {
-    sorted = TRADES.map(([label]) => ({ label, count: (groups[label] || []).length }))
-                   .sort((a, b) => b.count - a.count);
-  }
+  // Both modes: show all TRADES categories sorted by count desc (0-count ones at bottom).
+  // Street mode shows only businesses whose trade queries matched the street.
+  const sorted = TRADES.map(([label]) => ({ label, count: (groups[label] || []).length }))
+                       .sort((a, b) => b.count - a.count);
 
   sorted.forEach(({ label, count }) => {
     const colour = colourFor(label);
