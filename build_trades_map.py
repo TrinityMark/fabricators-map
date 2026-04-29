@@ -1,4 +1,50 @@
-<!DOCTYPE html>
+ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj'
+
+# (label, google_maps_search_query, unique_match_keyword)
+# search_query  → sent to Google Maps as the search string
+# match_keyword → unique substring used to tag which category a result came from
+TRADES = [
+    ('Air Conditioning',  'air conditioning',    'air conditioning'),
+    ('Auto Electricians', 'auto electrical',     'auto electr'),
+    ('Builders',          'builder',             'builder'),
+    ('Cabinet Makers',    'cabinet maker',       'cabinet maker'),
+    ('Car Mechanics',     'car mechanic',        'car mechanic'),
+    ('Carpenters',        'carpenter',           'carpenter'),
+    ('Concreters',        'concreter',           'concret'),
+    ('Diesel Mechanics',  'diesel mechanic',     'diesel'),
+    ('Earthmoving',       'earthmoving',         'earthmov'),
+    ('Electricians',      'electrician',         'electrician'),
+    ('Fabricators',       'fabricator',          'fabricat'),
+    ('Fencing',           'fencing',             'fencing'),
+    ('Flooring',          'flooring',            'flooring'),
+    ('Glaziers',          'glazier',             'glazier'),
+    ('Landscapers',       'landscaper',          'landscap'),
+    ('Locksmiths',        'locksmith',           'locksmith'),
+    ('Painters',          'painter',             'painter'),
+    ('Panel Beaters',     'panel beater',        'panel beat'),
+    ('Pest Control',      'pest control',        'pest control'),
+    ('Plasterers',        'plasterer',           'plaster'),
+    ('Plumbers',          'plumber',             'plumber'),
+    ('Roofers',           'roofer',              'roofer'),
+    ('Solar',             'solar installer',     'solar'),
+    ('Tilers',            'tiler',               'tiler'),
+]
+
+# One visually distinct colour per category (same order as TRADES)
+COLOURS = [
+    '#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6',
+    '#1abc9c','#e67e22','#34495e','#e91e63','#00bcd4',
+    '#8bc34a','#ff5722','#795548','#ff9800','#673ab7',
+    '#607d8b','#009688','#c0392b','#2980b9','#27ae60',
+    '#d35400','#16a085','#8e44ad','#2c3e50',
+]
+
+import json
+TRADES = sorted(TRADES, key=lambda t: t[0])
+trades_json  = json.dumps([[t[0], t[1], t[2]] for t in TRADES])
+colours_json = json.dumps(COLOURS)
+
+html = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -189,10 +235,10 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj';
+const ACTOR_MAPS = '##ACTOR_MAPS##';
 
-const TRADES = [["Air Conditioning", "air conditioning", "air conditioning"], ["Auto Electricians", "auto electrical", "auto electr"], ["Builders", "builder", "builder"], ["Cabinet Makers", "cabinet maker", "cabinet maker"], ["Car Mechanics", "car mechanic", "car mechanic"], ["Carpenters", "carpenter", "carpenter"], ["Concreters", "concreter", "concret"], ["Diesel Mechanics", "diesel mechanic", "diesel"], ["Earthmoving", "earthmoving", "earthmov"], ["Electricians", "electrician", "electrician"], ["Fabricators", "fabricator", "fabricat"], ["Fencing", "fencing", "fencing"], ["Flooring", "flooring", "flooring"], ["Glaziers", "glazier", "glazier"], ["Landscapers", "landscaper", "landscap"], ["Locksmiths", "locksmith", "locksmith"], ["Painters", "painter", "painter"], ["Panel Beaters", "panel beater", "panel beat"], ["Pest Control", "pest control", "pest control"], ["Plasterers", "plasterer", "plaster"], ["Plumbers", "plumber", "plumber"], ["Roofers", "roofer", "roofer"], ["Solar", "solar installer", "solar"], ["Tilers", "tiler", "tiler"]];
-const COLOURS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22", "#34495e", "#e91e63", "#00bcd4", "#8bc34a", "#ff5722", "#795548", "#ff9800", "#673ab7", "#607d8b", "#009688", "#c0392b", "#2980b9", "#27ae60", "#d35400", "#16a085", "#8e44ad", "#2c3e50"];
+const TRADES = ##TRADES_JSON##;
+const COLOURS = ##COLOURS_JSON##;
 
 // Map category label → colour
 const CAT_COLOUR = {};
@@ -583,4 +629,13 @@ document.getElementById('key-modal').addEventListener('click', e => { if (e.targ
 window.addEventListener('load', () => { buildPicker(); if (!getToken()) promptApiKey(); });
 </script>
 </body>
-</html>
+</html>"""
+
+html = (html
+    .replace('##ACTOR_MAPS##',    ACTOR_MAPS)
+    .replace('##TRADES_JSON##',   trades_json)
+    .replace('##COLOURS_JSON##',  colours_json))
+
+with open('trades-map.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+print(f'Written trades-map.html ({len(html):,} bytes)')
