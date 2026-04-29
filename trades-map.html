@@ -29,6 +29,42 @@
     .btn-key { background: #444; color: #ccc; font-size: 0.75rem; }
     .btn-other { background: #2a2a3e; color: #aaa; font-size: 0.75rem; border: 1px solid #444; }
 
+    /* Category picker */
+    .picker-wrap { position: relative; }
+    .picker-toggle {
+      padding: 6px 10px; border: 1px solid #444; border-radius: 6px;
+      background: #2a2a3e; color: #fff; font-size: 0.82rem; cursor: pointer;
+      white-space: nowrap; min-width: 160px; text-align: left;
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    .picker-toggle:hover { border-color: #888; }
+    .picker-arrow { font-size: 0.65rem; opacity: 0.7; }
+    .picker-dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0;
+      background: #fff; border: 1px solid #ddd; border-radius: 8px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.2); z-index: 2000;
+      width: 220px; max-height: 360px; overflow: hidden;
+      flex-direction: column;
+    }
+    .picker-dropdown.open { display: flex; }
+    .picker-top {
+      display: flex; gap: 6px; padding: 8px 10px;
+      border-bottom: 1px solid #eee; flex-shrink: 0;
+    }
+    .picker-top button {
+      flex: 1; padding: 3px 0; border: 1px solid #ddd; border-radius: 4px;
+      background: #f5f5f5; font-size: 0.75rem; cursor: pointer; color: #444;
+    }
+    .picker-top button:hover { background: #eee; }
+    .picker-items { overflow-y: auto; padding: 4px 0; }
+    .picker-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px; cursor: pointer; font-size: 0.82rem; color: #333;
+    }
+    .picker-item:hover { background: #f5f5f5; }
+    .picker-item input[type="checkbox"] { accent-color: #e94560; width: 14px; height: 14px; cursor: pointer; }
+    .picker-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
     .main { display: flex; flex: 1; overflow: hidden; }
 
     /* Sidebar */
@@ -117,6 +153,19 @@
   <span class="badge" id="count-badge">0 businesses</span>
   <div class="controls">
     <div><label>Suburb</label><input class="ctrl-input" type="text" id="inp-suburb" placeholder="e.g. Brendale" /></div>
+    <div class="picker-wrap" id="picker-wrap">
+      <button class="picker-toggle" id="picker-toggle" onclick="togglePicker(event)">
+        <span id="picker-label">All categories</span>
+        <span class="picker-arrow">&#9660;</span>
+      </button>
+      <div class="picker-dropdown" id="picker-dropdown">
+        <div class="picker-top">
+          <button onclick="pickerSelectAll()">Select all</button>
+          <button onclick="pickerClearAll()">Clear all</button>
+        </div>
+        <div class="picker-items" id="picker-items"></div>
+      </div>
+    </div>
     <button class="btn btn-go" id="btn-go" onclick="runSearch()">Go</button>
     <a href="index.html"><button class="btn btn-other">&#8592; Leads Search</button></a>
     <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
@@ -148,6 +197,65 @@ const COLOURS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c
 // Map category label → colour
 const CAT_COLOUR = {};
 TRADES.forEach(([label], i) => { CAT_COLOUR[label] = COLOURS[i % COLOURS.length]; });
+
+// ── Category picker ────────────────────────────────────────
+const pickerState = {};  // label → checked bool
+TRADES.forEach(([label]) => { pickerState[label] = true; });
+
+function buildPicker() {
+  const container = document.getElementById('picker-items');
+  TRADES.forEach(([label], i) => {
+    const colour = COLOURS[i % COLOURS.length];
+    const row = document.createElement('label');
+    row.className = 'picker-item';
+    row.innerHTML = `
+      <input type="checkbox" checked data-cat="${label}" onchange="onPickerChange()" />
+      <span class="picker-dot" style="background:${colour}"></span>
+      ${label}`;
+    container.appendChild(row);
+  });
+}
+
+function togglePicker(e) {
+  e.stopPropagation();
+  document.getElementById('picker-dropdown').classList.toggle('open');
+}
+
+function closePicker() { document.getElementById('picker-dropdown').classList.remove('open'); }
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('picker-wrap').contains(e.target)) closePicker();
+});
+
+function onPickerChange() {
+  document.querySelectorAll('#picker-items input[type="checkbox"]').forEach(cb => {
+    pickerState[cb.dataset.cat] = cb.checked;
+  });
+  updatePickerLabel();
+}
+
+function updatePickerLabel() {
+  const total    = TRADES.length;
+  const selected = Object.values(pickerState).filter(Boolean).length;
+  document.getElementById('picker-label').textContent =
+    selected === total ? 'All categories' :
+    selected === 0     ? 'None selected' :
+    `${selected} of ${total} selected`;
+}
+
+function pickerSelectAll() {
+  document.querySelectorAll('#picker-items input[type="checkbox"]').forEach(cb => { cb.checked = true; pickerState[cb.dataset.cat] = true; });
+  updatePickerLabel();
+}
+
+function pickerClearAll() {
+  document.querySelectorAll('#picker-items input[type="checkbox"]').forEach(cb => { cb.checked = false; pickerState[cb.dataset.cat] = false; });
+  updatePickerLabel();
+}
+
+function getSelectedTrades() {
+  return TRADES.filter(([label]) => pickerState[label]);
+}
 
 function getToken() { return localStorage.getItem('apify_token') || ''; }
 function setToken(t) { localStorage.setItem('apify_token', t); }
@@ -233,13 +341,19 @@ async function runSearch() {
     const center = await geocode(suburb);
     map.setView([center.lat, center.lng], 13);
 
-    // Build one query per trade category for this suburb
-    const queries = TRADES.map(([, q]) => `${q} ${suburb} Australia`);
+    // Only search selected categories
+    const selected = getSelectedTrades();
+    if (!selected.length) { alert('Please select at least one trade category.'); hideOverlay(); document.getElementById('btn-go').disabled = false; return; }
 
-    setStatus(`Searching ${TRADES.length} trade categories in ${suburb}…`);
+    // More results per query when fewer categories are selected
+    const perQuery = Math.min(100, Math.max(20, Math.round(400 / selected.length)));
+
+    const queries = selected.map(([, q]) => `${q} ${suburb} Australia`);
+
+    setStatus(`Searching ${selected.length} trade categor${selected.length === 1 ? 'y' : 'ies'} in ${suburb}… (up to ${perQuery} results each)`);
     const runId     = await apifyRun({
       searchStringsArray: queries,
-      maxCrawledPlacesPerSearch: 20,
+      maxCrawledPlacesPerSearch: perQuery,
       language: 'en', maxImages: 0, scrapeReviews: false,
     }, token);
     const datasetId = await apifyWait(runId, token);
@@ -431,7 +545,7 @@ function saveKey() {
   setToken(v); closeKeyModal();
 }
 document.getElementById('key-modal').addEventListener('click', e => { if (e.target === document.getElementById('key-modal')) closeKeyModal(); });
-window.addEventListener('load', () => { if (!getToken()) promptApiKey(); });
+window.addEventListener('load', () => { buildPicker(); if (!getToken()) promptApiKey(); });
 </script>
 </body>
 </html>
