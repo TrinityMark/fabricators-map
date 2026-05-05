@@ -386,6 +386,8 @@ async function runSearch() {
         if (search.includes(matchKey.toLowerCase())) { category = label; break; }
       }
 
+      // ownerName is set when the Google Maps listing owner has a profile
+      const ownerRaw = p.ownerName || (typeof p.owner === 'object' ? p.owner?.name : p.owner) || '';
       places.push({
         name,
         street:   p.street     || '',
@@ -393,6 +395,7 @@ async function runSearch() {
         phone:    p.phone      || '',
         website:  p.website    || '',
         rating:   p.totalScore || '',
+        owner:    ownerRaw,
         category,
         lat: loc.lat,
         lng: loc.lng,
@@ -488,10 +491,11 @@ function popupHtml(p) {
   const rating = p.rating ? `<span class="popup-rating">&#9733; ${p.rating}</span>` : '';
   const phone  = p.phone   ? `<div class="popup-row">&#128222; <a href="tel:${p.phone}">${p.phone}</a></div>` : '';
   const site   = p.website ? `<div class="popup-row">&#127760; <a href="${p.website}" target="_blank" rel="noopener">Visit website</a></div>` : '';
+  const owner  = p.owner   ? `<div class="popup-row">&#128100; ${p.owner}</div>` : '';
   return `<div class="popup-name">${p.name} ${rating}</div>
     <div><span class="popup-tag" style="background:${colour}">${p.category}</span></div>
     ${addr ? `<div class="popup-row">&#128205; ${addr}</div>` : ''}
-    ${phone}${site}`;
+    ${phone}${owner}${site}`;
 }
 
 // ── Sidebar ────────────────────────────────────────────────
@@ -548,13 +552,27 @@ function highlightCatRow(label) {
 }
 
 // ── Save CSV ───────────────────────────────────────────────
+// Default values used when a field is missing — keeps CRM bulk-upload happy
+const CSV_DEFAULTS = {
+  suburb:  'Unknown',
+  phone:   '+61 7 0000 0000',
+  website: 'https://unknown.com.au',
+  rating:  '0',
+};
+
 function saveCSV() {
   if (!allPlaces.length) return;
-  const cols = ['Business Name','Street Address','Suburb','Phone','Website','Google Rating','Trade Category'];
+  const cols = ['Business Name','Street Address','Suburb','Phone','Website','Google Rating','Owner / Contact','Trade Category'];
   const rows = [cols.join(',')];
   allPlaces.forEach(p => rows.push([
-    csv(p.name), csv(p.street), csv(p.suburb),
-    csv(p.phone), csv(p.website), p.rating || '', csv(p.category),
+    csv(p.name),
+    csv(p.street),
+    csv(p.suburb   || CSV_DEFAULTS.suburb),
+    csv(p.phone    || CSV_DEFAULTS.phone),
+    csv(p.website  || CSV_DEFAULTS.website),
+    p.rating       || CSV_DEFAULTS.rating,
+    csv(p.owner    || ''),
+    csv(p.category),
   ].join(',')));
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob) });
