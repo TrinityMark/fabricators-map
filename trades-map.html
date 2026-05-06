@@ -386,15 +386,17 @@ async function runSearch() {
         if (search.includes(matchKey.toLowerCase())) { category = label; break; }
       }
 
-      // ownerName is set when the Google Maps listing owner has a profile
       const ownerRaw = p.ownerName || (typeof p.owner === 'object' ? p.owner?.name : p.owner) || '';
+      const parsed   = p.addressParsed || {};
       places.push({
         name,
-        street:   p.street     || '',
-        suburb:   p.city       || '',
-        phone:    p.phone      || '',
-        website:  p.website    || '',
-        rating:   p.totalScore || '',
+        street:   p.street          || parsed.street    || '',
+        suburb:   p.city            || parsed.city       || '',
+        postcode: p.postalCode      || parsed.postalCode || '',
+        state:    p.state           || parsed.state      || '',
+        phone:    p.phone           || '',
+        website:  p.website         || '',
+        rating:   p.totalScore      || '',
         owner:    ownerRaw,
         category,
         lat: loc.lat,
@@ -552,28 +554,71 @@ function highlightCatRow(label) {
 }
 
 // ── Save CSV ───────────────────────────────────────────────
-// Default values used when a field is missing — keeps CRM bulk-upload happy
-const CSV_DEFAULTS = {
-  suburb:  'Unknown',
-  phone:   '+61 7 0000 0000',
-  website: 'https://unknown.com.au',
-  rating:  '0',
-};
-
+// Column names must match the CRM import template exactly.
+// "Default if not found" = used when we have no real value.
+// "Default" = always applied to every row.
 function saveCSV() {
   if (!allPlaces.length) return;
-  const cols = ['Business Name','Street Address','Suburb','Phone','Website','Google Rating','Owner / Contact','Trade Category'];
+
+  const TRINITY_OFFICE  = 'Brendale';
+  const CONTACT_OWNER   = 'businessmanager@trinityadvisory.com.au';
+
+  const cols = [
+    'First Name',
+    'Last Name',
+    'Company',
+    'Associated Company',
+    'Website URL',
+    'Trinity Office Location',
+    'Please nominate your closest trinity office?',
+    'Street Address',
+    'Suburb',
+    'Billing Post Code',
+    'State/Region',
+    'Country',
+    'Phone Number',
+    'Email Address',
+    'Marketing contact status',
+    'How did you hear about us',
+    'Original Traffic Source',
+    'Lifecycle Status',
+    'Lead Status',
+    'Lifecycle Stage',
+    'Contact Owner',
+  ];
+
   const rows = [cols.join(',')];
-  allPlaces.forEach(p => rows.push([
-    csv(p.name),
-    csv(p.street),
-    csv(p.suburb   || CSV_DEFAULTS.suburb),
-    csv(p.phone    || CSV_DEFAULTS.phone),
-    csv(p.website  || CSV_DEFAULTS.website),
-    p.rating       || CSV_DEFAULTS.rating,
-    csv(p.owner    || ''),
-    csv(p.category),
-  ].join(',')));
+
+  allPlaces.forEach(p => {
+    // Split owner name into first / last (best effort)
+    const ownerParts = (p.owner || '').trim().split(/\s+/);
+    const firstName  = ownerParts.length > 0 && ownerParts[0] ? ownerParts[0]           : 'There';
+    const lastName   = ownerParts.length > 1                  ? ownerParts.slice(1).join(' ') : '';
+
+    rows.push([
+      csv(firstName),
+      csv(lastName),
+      csv(p.name),
+      csv(p.name),                                              // Associated Company = Company
+      csv(p.website  || 'https://notfound.com.au'),
+      csv(TRINITY_OFFICE),
+      csv(TRINITY_OFFICE),
+      csv(p.street),
+      csv(p.suburb),
+      csv(p.postcode),
+      csv(p.state),
+      'Australia',
+      csv(p.phone    || '+61 7 77778888'),
+      csv('notfound@business.com.au'),                          // email not available from Maps
+      'Unknown',                                                // Marketing contact status
+      'Direct Sales',
+      'Offline Sources',
+      'Tepid Lead',
+      'New',
+      'Lead',
+      csv(CONTACT_OWNER),
+    ].join(','));
+  });
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob) });
   const suburb = document.getElementById('inp-suburb').value.trim().replace(/\\s+/g, '-').toLowerCase();
