@@ -601,19 +601,22 @@ function highlightCatRow(label) {
 
 // ── Save CSV ───────────────────────────────────────────────
 // Column names must match the CRM import template exactly.
-// "Default if not found" = used when we have no real value.
-// "Default" = always applied to every row.
+// Duplicate column names carry the same value.
+// Email uses a unique random GUID per row so the CRM doesn't merge records.
 function saveCSV() {
   if (!allPlaces.length) return;
 
-  const TRINITY_OFFICE  = 'Brendale';
-  const CONTACT_OWNER   = 'businessmanager@trinityadvisory.com.au';
+  const TRINITY_OFFICE = 'Brendale';
+  const CONTACT_OWNER  = 'businessmanager@trinityadvisory.com.au';
 
+  // ── Contact section columns ──────────────────────────────
+  // ── Company section columns ──────────────────────────────
   const cols = [
+    // Contact
     'First Name',
     'Last Name',
     'Company',
-    'Associated Company',
+    'Associated Group Name',
     'Website URL',
     'Trinity Office Location',
     'Please nominate your closest trinity office?',
@@ -624,13 +627,27 @@ function saveCSV() {
     'Country',
     'Phone Number',
     'Email Address',
-    'Marketing contact status',
     'How did you hear about us',
     'Original Traffic Source',
     'Lifecycle Status',
     'Lead Status',
     'Lifecycle Stage',
     'Contact Owner',
+    // Company
+    'Company name',
+    'Website URL',
+    'Trading Name',
+    'Associated Group Name',
+    'Company owner',
+    'Phone Number',
+    'Street Address',
+    'City',
+    'State/Region',
+    'Country/Region',
+    'Industry (Trinity)',
+    'Industry',
+    'Please nominate your closest trinity office?',
+    'Trinity Office Location',
   ];
 
   const rows = [cols.join(',')];
@@ -638,31 +655,57 @@ function saveCSV() {
   allPlaces.forEach(p => {
     // Split owner name into first / last (best effort)
     const ownerParts = (p.owner || '').trim().split(/\s+/);
-    const firstName  = ownerParts.length > 0 && ownerParts[0] ? ownerParts[0]           : 'There';
-    const lastName   = ownerParts.length > 1                  ? ownerParts.slice(1).join(' ') : '';
+    const firstName  = ownerParts.length > 0 && ownerParts[0] ? ownerParts[0] : 'There';
+    const lastName   = ownerParts.length > 1 ? ownerParts.slice(1).join(' ') : '';
+
+    // Unique email per row — prevents CRM merging records on same address
+    const guid  = crypto.randomUUID();
+    const email = `notfound_${guid}@business.com.au`;
+
+    const company = csv(p.name);
+    const website = csv(p.website  || 'https://notfound.com.au');
+    const phone   = csv(p.phone    || '+61 7 77778888');
+    const street  = csv(p.street);
+    const suburb  = csv(p.suburb);
+    const state   = csv(p.state);
 
     rows.push([
+      // Contact
       csv(firstName),
       csv(lastName),
-      csv(p.name),
-      csv(p.name),                                              // Associated Company = Company
-      csv(p.website  || 'https://notfound.com.au'),
+      company,
+      company,                  // Associated Group Name = Company
+      website,
       csv(TRINITY_OFFICE),
       csv(TRINITY_OFFICE),
-      csv(p.street),
-      csv(p.suburb),
+      street,
+      suburb,
       csv(p.postcode),
-      csv(p.state),
+      state,
       'Australia',
-      csv(p.phone    || '+61 7 77778888'),
-      csv('notfound@business.com.au'),                          // email not available from Maps
-      'Unknown',                                                // Marketing contact status
+      phone,
+      csv(email),
       'Direct Sales',
       'Offline Sources',
       'Tepid Lead',
       'New',
       'Lead',
       csv(CONTACT_OWNER),
+      // Company
+      company,                  // Company name
+      website,                  // Website URL (duplicate)
+      company,                  // Trading Name
+      company,                  // Associated Group Name (duplicate)
+      csv(p.owner || ''),       // Company owner
+      phone,                    // Phone Number (duplicate)
+      street,                   // Street Address (duplicate)
+      suburb,                   // City = Suburb
+      state,                    // State/Region (duplicate)
+      'Australia',              // Country/Region
+      '',                       // Industry (Trinity) — no default specified
+      'CRM Industry',           // Industry
+      csv(TRINITY_OFFICE),      // Please nominate... (duplicate)
+      csv(TRINITY_OFFICE),      // Trinity Office Location (duplicate)
     ].join(','));
   });
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
