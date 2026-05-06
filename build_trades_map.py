@@ -445,6 +445,7 @@ async function runSearch() {
         rating:   p.totalScore      || '',
         owner:    ownerRaw,
         category,
+        fullAddress: p.address      || '',   // fallback for street filter
         lat: loc.lat,
         lng: loc.lng,
       });
@@ -452,20 +453,26 @@ async function runSearch() {
 
     // isStreetMode controls sidebar title only; both modes now use TRADES categorisation
     if (street) {
-      // Keep only businesses whose street address actually contains the searched street.
-      // Strip common road-type suffixes so "Terrence Road" matches "Terrence Rd" etc.
-      const streetKey = street.toLowerCase()
+      // Build a normalised version of the searched street for matching.
+      // Normalise both the search term and the candidate address the same way
+      // so "Aldinga Street" matches "Aldinga St" but NOT "Aldinga Beach Rd".
+      const normalise = s => s.toLowerCase()
         .replace(/\\b(road|rd|street|st|avenue|ave|drive|dr|court|ct|place|pl|lane|ln|way|close|cl|crescent|cres|boulevard|blvd|highway|hwy|parade|pde)\\b/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
         .replace(/\\s+/g, ' ').trim();
-      // First meaningful word e.g. "terrence" from "terrence road"
-      const keyword = streetKey.split(' ')[0];
-      if (keyword) {
-        const unfiltered = places;
-        places = unfiltered.filter(p => (p.street || '').toLowerCase().includes(keyword));
-        if (places.length === 0 && unfiltered.length > 0) {
-          alert(`No results had "${street}" in their address.\\nShowing all ${unfiltered.length} nearby results instead.`);
-          places = unfiltered;
-        }
+
+      const searchNorm = normalise(street);   // e.g. "aldinga"
+
+      const unfiltered = places;
+      places = unfiltered.filter(p => {
+        // Check both the parsed street field and the full address string
+        const candidates = [p.street, p.fullAddress].filter(Boolean);
+        return candidates.some(addr => normalise(addr).includes(searchNorm));
+      });
+
+      if (places.length === 0 && unfiltered.length > 0) {
+        alert(`No results had "${street}" in their address.\\nShowing all ${unfiltered.length} nearby results instead.`);
+        places = unfiltered;
       }
     }
 
