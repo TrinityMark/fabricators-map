@@ -457,12 +457,19 @@ async function runSearch() {
       // e.g. "Aldinga Street" → "aldinga", "Terrence Road" → "terrence"
       // This handles abbreviations: "Aldinga St" and "Aldinga Street" both contain "aldinga".
       // Check both the parsed street field and the full address string as fallback.
-      const keyword = street.toLowerCase().split(/\s+/)[0];
+      const keyword     = street.toLowerCase().split(/\s+/)[0];
+      const suburbLower = suburb.toLowerCase();
       if (keyword && keyword.length >= 3) {
         const unfiltered = places;
         places = unfiltered.filter(p => {
+          // 1. Street must contain the keyword
           const addr = ((p.street || '') + ' ' + (p.fullAddress || '')).toLowerCase();
-          return addr.includes(keyword);
+          if (!addr.includes(keyword)) return false;
+          // 2. Suburb must match (or be blank) — prevents cross-state false positives
+          //    e.g. "Aldinga Beach" fails when searching Brendale
+          const pSuburb = (p.suburb || '').toLowerCase();
+          if (pSuburb && !pSuburb.includes(suburbLower) && !suburbLower.includes(pSuburb)) return false;
+          return true;
         });
         if (places.length === 0 && unfiltered.length > 0) {
           alert('No results had "' + street + '" in their address.\nShowing all ' + unfiltered.length + ' nearby results instead.');
