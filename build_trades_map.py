@@ -394,11 +394,10 @@ async function runSearch() {
     let queries, perQuery, places;
 
     if (street) {
-      // ── Street mode: all trades, street included in each query ─
-      // Searching "electrician Terrence Road Brendale Australia" finds
-      // businesses of that type on/near the street. Run all 24 trades
-      // with a small per-trade limit (street is short).
-      perQuery = 10;
+      // ── Street mode: all trades + generic pass ─────────────
+      // Pass 1: 24 trade-specific queries at 20 results each
+      // Pass 2: one generic query to catch anything the trade queries missed
+      perQuery = 20;
       queries  = TRADES.map(([, searchQuery]) => `${searchQuery} ${street} ${suburb} Australia`);
       setStatus(`Searching all trades on ${street}…`);
     } else {
@@ -410,11 +409,24 @@ async function runSearch() {
       setStatus(`Searching ${selected.length} trade categor${selected.length === 1 ? 'y' : 'ies'} in ${suburb}…`);
     }
 
+    // Pass 1: trade queries
     const runId     = await apifyRun({ searchStringsArray: queries, maxCrawledPlacesPerSearch: perQuery, language: 'en', maxImages: 0, scrapeReviews: false }, token);
     const datasetId = await apifyWait(runId, token);
 
     setStatus('Loading results…');
-    const raw   = await apifyDataset(datasetId, token);
+    let raw = await apifyDataset(datasetId, token);
+
+    // Pass 2 (street mode only): generic query to catch any missed businesses
+    if (street) {
+      setStatus('Running generic pass to catch any missed businesses…');
+      const genericQuery  = [`${street} ${suburb} Australia`];
+      const runId2        = await apifyRun({ searchStringsArray: genericQuery, maxCrawledPlacesPerSearch: 100, language: 'en', maxImages: 0, scrapeReviews: false }, token);
+      const datasetId2    = await apifyWait(runId2, token);
+      const raw2          = await apifyDataset(datasetId2, token);
+      raw = raw.concat(raw2);
+      setStatus('Combining results…');
+    }
+
     const seen  = new Set();
     places = [];
 
