@@ -181,7 +181,7 @@ html = r"""<!DOCTYPE html>
   <div class="key-box">
     <h2>Apify API Key</h2>
     <p>Enter your Apify API key. Saved in your browser — only sent to Apify when you run a search.</p>
-    <input type="password" id="key-input" placeholder="apify_api_..." />
+    <input type="text" id="key-input" placeholder="apify_api_..." />
     <div class="row">
       <button class="btn" style="background:#ddd;color:#333;" onclick="closeKeyModal()">Cancel</button>
       <button class="btn btn-go" onclick="saveKey()">Save</button>
