@@ -677,8 +677,8 @@ function saveCSV() {
       suburb,                   // City = Suburb
       state,                    // State/Region (duplicate)
       'Australia',              // Country/Region
-      '',                       // Industry (Trinity) — no default specified
-      'CRM Industry',           // Industry
+      csv(p.category),          // Industry (Trinity) — trade category from scrape
+      'Construction',           // Industry
       csv(TRINITY_OFFICE),      // Please nominate... (duplicate)
       csv(TRINITY_OFFICE),      // Trinity Office Location (duplicate)
     ].join(','));
