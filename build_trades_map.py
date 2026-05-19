@@ -1,4 +1,5 @@
 ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj'
+VERSION    = 'v1.1'
 
 # (label, google_maps_search_query, unique_match_keyword)
 # search_query  → sent to Google Maps as the search string
@@ -232,6 +233,7 @@ html = r"""<!DOCTYPE html>
 <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
     <button class="btn btn-key" onclick="promptApiKey()">&#9881; API Key</button>
     <button class="btn btn-key" onclick="promptAbnGuid()" id="btn-abn" title="ABN Lookup GUID">&#127462;&#127482; ABN</button>
+    <span style="font-size:0.7rem;color:#555;white-space:nowrap;">##VERSION##</span>
   </div>
 </header>
 
@@ -984,7 +986,8 @@ window.addEventListener('load', () => { buildPicker(); if (!getToken()) promptAp
 html = (html
     .replace('##ACTOR_MAPS##',    ACTOR_MAPS)
     .replace('##TRADES_JSON##',   trades_json)
-    .replace('##COLOURS_JSON##',  colours_json))
+    .replace('##COLOURS_JSON##',  colours_json)
+    .replace('##VERSION##',       VERSION))
 
 with open('trades-map.html', 'w', encoding='utf-8') as f:
     f.write(html)
