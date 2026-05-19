@@ -394,12 +394,17 @@ async function runSearch() {
     let queries, perQuery, places;
 
     if (street) {
-      // ── Street mode: all trades + generic pass ─────────────
-      // Pass 1: 24 trade-specific queries at 20 results each
-      // Pass 2: one generic query to catch anything the trade queries missed
+      // ── Street mode ─────────────────────────────────────────
+      // Pass 1a: 24 trade-specific queries to catch all trade businesses
+      // Pass 1b: broad generic queries to catch non-trade businesses
+      // Pass 2:  single generic location query as a final catch-all
+      const broadTerms = ['business','company','service','contractor','supplier','warehouse','office','shop','store','workshop'];
       perQuery = 20;
-      queries  = TRADES.map(([, searchQuery]) => `${searchQuery} ${street} ${suburb} Australia`);
-      setStatus(`Searching all trades on ${street}…`);
+      queries  = [
+        ...TRADES.map(([, searchQuery]) => `${searchQuery} ${street} ${suburb} Australia`),
+        ...broadTerms.map(term => `${term} ${street} ${suburb} Australia`),
+      ];
+      setStatus(`Searching all businesses on ${street}…`);
     } else {
       // ── Suburb mode: one query per selected trade ──────────
       const selected = getSelectedTrades();
@@ -427,6 +432,7 @@ async function runSearch() {
       setStatus('Combining results…');
     }
 
+    const isStreetSearch = !!street;
     const seen  = new Set();
     places = [];
 
@@ -437,11 +443,17 @@ async function runSearch() {
       const loc = p.location || {};
       if (!loc.lat || !loc.lng) continue;
 
-      // Match back to our trade label via the search query keyword (both modes)
-      const search = (p.searchString || '').toLowerCase();
-      let category = 'Other';
-      for (const [label, , matchKey] of TRADES) {
-        if (search.includes(matchKey.toLowerCase())) { category = label; break; }
+      // Street mode: use Google's raw categoryName so ALL business types appear.
+      // Suburb mode: match back to our TRADES label via the search query keyword.
+      let category;
+      if (isStreetSearch) {
+        category = p.categoryName || 'Other';
+      } else {
+        const search = (p.searchString || '').toLowerCase();
+        category = 'Other';
+        for (const [label, , matchKey] of TRADES) {
+          if (search.includes(matchKey.toLowerCase())) { category = label; break; }
+        }
       }
 
       const ownerRaw = p.ownerName || (typeof p.owner === 'object' ? p.owner?.name : p.owner) || '';
@@ -574,10 +586,17 @@ function buildSidebar(groups, locationLabel, isStreetMode) {
   const listEl = document.getElementById('cat-list');
   listEl.innerHTML = '';
 
-  // Both modes: show all TRADES categories sorted by count desc (0-count ones at bottom).
-  // Street mode shows only businesses whose trade queries matched the street.
-  const sorted = TRADES.map(([label]) => ({ label, count: (groups[label] || []).length }))
-                       .sort((a, b) => b.count - a.count);
+  // Street mode: show every Google Maps category that actually appeared, sorted by count.
+  // Suburb mode: show all 24 TRADES categories sorted by count (0-count ones at bottom).
+  let sorted;
+  if (isStreetMode) {
+    sorted = Object.keys(groups)
+      .map(label => ({ label, count: groups[label].length }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  } else {
+    sorted = TRADES.map(([label]) => ({ label, count: (groups[label] || []).length }))
+                   .sort((a, b) => b.count - a.count);
+  }
 
   sorted.forEach(({ label, count }) => {
     const colour = colourFor(label);
