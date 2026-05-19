@@ -186,7 +186,7 @@
 <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
     <button class="btn btn-key" onclick="promptApiKey()">&#9881; API Key</button>
     <button class="btn btn-key" onclick="promptAbnGuid()" id="btn-abn" title="ABN Lookup GUID">&#127462;&#127482; ABN</button>
-    <span style="font-size:0.7rem;color:#555;white-space:nowrap;">v1.1</span>
+    <span style="font-size:0.7rem;color:#555;white-space:nowrap;">v1.2</span>
   </div>
 </header>
 
@@ -520,29 +520,11 @@ async function runSearch() {
       }
     }
 
-    // ── ABN enrichment (street mode only, if GUID is set) ──────
+    // ── ABN owner enrichment (if GUID is set) ──────────────────
+    // Looks up each business by name in the ABN register.
+    // For sole traders the legal entity name becomes the Owner field.
     const abnGuid = getAbnGuid();
-    if (street && abnGuid) {
-      // Pass 4: find businesses in the ABN register not returned by Google
-      const seenNames = new Set(places.map(p => p.name.toLowerCase()));
-      const postcode  = places.find(p => p.postcode)?.postcode || '4500';
-      const abnPlaces = await abnStreetSearch(street, suburb, postcode, seenNames, abnGuid);
-
-      // Geocode any ABN-only businesses so they can be placed on the map
-      for (const p of abnPlaces) {
-        try {
-          const c = await geocode(`${p.street} ${p.suburb} Australia`);
-          p.lat = c.lat; p.lng = c.lng;
-        } catch (e) {
-          // Use suburb centre if geocode fails
-          p.lat = center.lat; p.lng = center.lng;
-        }
-      }
-      places = places.concat(abnPlaces.filter(p => p.lat && p.lng));
-
-      // Enrich owner names for all places
-      await abnEnrichOwners(places, abnGuid);
-    }
+    if (abnGuid) await abnEnrichOwners(places, abnGuid);
 
     renderResults(places, locationLabel, !!street);
     document.getElementById('btn-csv').disabled = places.length === 0;
@@ -832,61 +814,20 @@ document.getElementById('abn-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('abn-modal')) closeAbnModal();
 });
 
-// Fetch via CORS proxy if direct fetch fails (ABN API may not have CORS headers)
+// ABN API returns JSONP: callback({...}) — strip the wrapper before parsing
 async function abnFetch(url) {
-  try {
-    const r = await fetch(url);
-    if (r.ok) return r.json();
-  } catch (e) { /* try proxy */ }
-  const proxy = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
-  const r2 = await fetch(proxy);
-  if (!r2.ok) throw new Error('ABN fetch failed: ' + r2.status);
-  return r2.json();
-}
-
-// Search ABN register by postcode, filter to street keyword, return places not already seen
-async function abnStreetSearch(street, suburb, postcode, seenNames, guid) {
-  if (!guid) return [];
-  const keyword = street.toLowerCase().split(/\s+/)[0];
-  const pc = postcode || '4500'; // fallback to Brendale postcode
-
-  setStatus(`ABN register: searching postcode ${pc} for ${street}…`);
-  const url = `https://abr.business.gov.au/json/MatchingNames.aspx?name=${encodeURIComponent(street)}&guid=${guid}&postcode=${pc}&activeABNsOnly=true`;
-
-  let names;
-  try { names = (await abnFetch(url)).Names || []; }
-  catch (e) { console.warn('ABN street search failed:', e); return []; }
-
-  const newPlaces = [];
-  for (const n of names) {
-    if (seenNames.has(n.Name.toLowerCase())) continue;
-    // Get full details to check registered address
+  const parse = text => {
+    const json = text.trim().replace(/^[^(]+\(/, '').replace(/\)\s*;?\s*$/, '');
+    return JSON.parse(json);
+  };
+  // Try direct first, then CORS proxy
+  for (const u of [url, `https://corsproxy.io/?url=${encodeURIComponent(url)}`]) {
     try {
-      const det = await abnFetch(`https://abr.business.gov.au/json/AbnDetails.aspx?abn=${n.Abn}&guid=${guid}`);
-      const addr = ((det.AddressPostcode || '') + ' ' + (det.AddressState || '') + ' ' + (det.AddressLine1 || '')).toLowerCase();
-      if (!addr.includes(keyword)) continue; // not on this street
-      const name = det.EntityName || n.Name;
-      if (seenNames.has(name.toLowerCase())) continue;
-      seenNames.add(name.toLowerCase());
-      newPlaces.push({
-        name,
-        street:      det.AddressLine1 || '',
-        suburb:      det.AddressSuburb || suburb,
-        postcode:    det.AddressPostcode || pc,
-        state:       det.AddressState || 'QLD',
-        phone:       '',
-        website:     '',
-        rating:      '',
-        owner:       det.EntityTypeCode === 'IND' ? name : '',
-        category:    'ABN Register',
-        fullAddress: `${det.AddressLine1 || ''}, ${det.AddressSuburb || suburb} ${det.AddressState || 'QLD'} ${det.AddressPostcode || pc}`,
-        abn:         n.Abn,
-        lat: null, lng: null, // no coords from ABN — geocode separately
-      });
-    } catch (e) { /* skip this one */ }
-    await sleep(120); // gentle rate limiting
+      const r = await fetch(u);
+      if (r.ok) return parse(await r.text());
+    } catch (e) { /* try next */ }
   }
-  return newPlaces;
+  throw new Error('ABN fetch failed for: ' + url);
 }
 
 // Enrich existing places with owner name from ABN register
