@@ -345,91 +345,139 @@ async function runSearch() {
     const center = await geocode(suburb);
     map.setView([center.lat, center.lng], street ? 15 : 13);
 
-    let queries, perQuery, places;
+    let places;
+    const isStreetSearch = !!street;
 
     if (street) {
-      // ── Street mode ─────────────────────────────────────────
-      // Pass 1a: 24 trade-specific queries to catch all trade businesses
-      // Pass 1b: broad generic queries to catch non-trade businesses
-      // Pass 2:  single generic location query as a final catch-all
-      const broadTerms = ['business','company','service','contractor','supplier','warehouse','office','shop','store','workshop'];
-      perQuery = 20;
-      queries  = [
-        ...TRADES.map(([, searchQuery]) => `${searchQuery} ${street} ${suburb} Australia`),
-        ...broadTerms.map(term => `${term} ${street} ${suburb} Australia`),
+      // ══ Street mode — three passes to maximise coverage ════════════════
+      //
+      // Pass 1 — coordinates map scan (primary)
+      //   Build a Google Maps search URL from the street's geocoded location.
+      //   This tells Google "show me every business pinned on the map here"
+      //   regardless of business type — catches engineers, kayak shops, etc.
+      //
+      // Pass 2 — expanded text queries (backup)
+      //   24 trade terms + 20 broad terms × 20 results each.
+      //   Catches businesses that don't show in the map view zoom.
+      //
+      // Pass 3 — plain street name query (final catch-all)
+      //   Sometimes returns listings the other passes miss.
+      //
+      // All three are merged, deduplicated, then filtered to this street.
+
+      // Try to geocode the street precisely; fall back to suburb centre
+      let streetCenter = center;
+      try {
+        setStatus(`Locating ${street}…`);
+        streetCenter = await geocode(`${street} ${suburb} Australia`);
+      } catch (e) { /* use suburb centre */ }
+      map.setView([streetCenter.lat, streetCenter.lng], 17);
+
+      // ── Pass 1: coordinates URL ─────────────────────────────
+      setStatus(`Pass 1 — scanning map at ${street}…`);
+      const mapsUrl = `https://www.google.com/maps/search/businesses/@${streetCenter.lat.toFixed(6)},${streetCenter.lng.toFixed(6)},17z`;
+      const runId1     = await apifyRun({ startUrls: [{ url: mapsUrl }], maxCrawledPlacesPerSearch: 200, language: 'en', maxImages: 0, scrapeReviews: false }, token);
+      const datasetId1 = await apifyWait(runId1, token);
+      let raw = await apifyDataset(datasetId1, token);
+      setStatus(`Pass 1 done (${raw.length} raw) — running text queries…`);
+
+      // ── Pass 2: expanded text queries ──────────────────────
+      const broadTerms = [
+        'business','company','service','contractor','supplier','warehouse',
+        'office','shop','store','workshop','engineer','manufacturing',
+        'equipment','rental','specialist','consultant','distributor',
+        'supplies','products','industries',
       ];
-      setStatus(`Searching all businesses on ${street}…`);
+      const textQueries = [
+        ...TRADES.map(([, q]) => `${q} ${street} ${suburb} Australia`),
+        ...broadTerms.map(t  => `${t} ${street} ${suburb} Australia`),
+      ];
+      const runId2     = await apifyRun({ searchStringsArray: textQueries, maxCrawledPlacesPerSearch: 20, language: 'en', maxImages: 0, scrapeReviews: false }, token);
+      const datasetId2 = await apifyWait(runId2, token);
+      const raw2 = await apifyDataset(datasetId2, token);
+      raw = raw.concat(raw2);
+      setStatus(`Pass 2 done (${raw.length} combined) — running catch-all…`);
+
+      // ── Pass 3: plain street name ───────────────────────────
+      const runId3     = await apifyRun({ searchStringsArray: [`${street} ${suburb} Australia`], maxCrawledPlacesPerSearch: 100, language: 'en', maxImages: 0, scrapeReviews: false }, token);
+      const datasetId3 = await apifyWait(runId3, token);
+      const raw3 = await apifyDataset(datasetId3, token);
+      raw = raw.concat(raw3);
+      setStatus(`All passes done (${raw.length} total raw) — filtering…`);
+
+      // ── Build places from merged raw results ────────────────
+      const seen = new Set();
+      places = [];
+      for (const p of raw) {
+        const name = (p.title || '').trim();
+        if (!name || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        const loc = p.location || {};
+        if (!loc.lat || !loc.lng) continue;
+        const ownerRaw = p.ownerName || (typeof p.owner === 'object' ? p.owner?.name : p.owner) || '';
+        const parsed   = p.addressParsed || {};
+        places.push({
+          name,
+          street:      p.street       || parsed.street    || '',
+          suburb:      p.city         || parsed.city       || '',
+          postcode:    p.postalCode   || parsed.postalCode || '',
+          state:       p.state        || parsed.state      || '',
+          phone:       p.phone        || '',
+          website:     p.website      || '',
+          rating:      p.totalScore   || '',
+          owner:       ownerRaw,
+          category:    p.categoryName || 'Other',
+          fullAddress: p.address      || '',
+          lat: loc.lat, lng: loc.lng,
+        });
+      }
+
     } else {
-      // ── Suburb mode: one query per selected trade ──────────
+      // ══ Suburb mode ═════════════════════════════════════════
       const selected = getSelectedTrades();
       if (!selected.length) { alert('Please select at least one trade category.'); hideOverlay(); document.getElementById('btn-go').disabled = false; return; }
-      perQuery = Math.min(100, Math.max(20, Math.round(400 / selected.length)));
-      queries  = selected.map(([, searchQuery]) => `${searchQuery} ${suburb} Australia`);
+      const perQuery = Math.min(100, Math.max(20, Math.round(400 / selected.length)));
+      const queries  = selected.map(([, searchQuery]) => `${searchQuery} ${suburb} Australia`);
       setStatus(`Searching ${selected.length} trade categor${selected.length === 1 ? 'y' : 'ies'} in ${suburb}…`);
-    }
 
-    // Pass 1: trade queries
-    const runId     = await apifyRun({ searchStringsArray: queries, maxCrawledPlacesPerSearch: perQuery, language: 'en', maxImages: 0, scrapeReviews: false }, token);
-    const datasetId = await apifyWait(runId, token);
+      const runId     = await apifyRun({ searchStringsArray: queries, maxCrawledPlacesPerSearch: perQuery, language: 'en', maxImages: 0, scrapeReviews: false }, token);
+      const datasetId = await apifyWait(runId, token);
+      setStatus('Loading results…');
+      const raw = await apifyDataset(datasetId, token);
 
-    setStatus('Loading results…');
-    let raw = await apifyDataset(datasetId, token);
-
-    // Pass 2 (street mode only): generic query to catch any missed businesses
-    if (street) {
-      setStatus('Running generic pass to catch any missed businesses…');
-      const genericQuery  = [`${street} ${suburb} Australia`];
-      const runId2        = await apifyRun({ searchStringsArray: genericQuery, maxCrawledPlacesPerSearch: 100, language: 'en', maxImages: 0, scrapeReviews: false }, token);
-      const datasetId2    = await apifyWait(runId2, token);
-      const raw2          = await apifyDataset(datasetId2, token);
-      raw = raw.concat(raw2);
-      setStatus('Combining results…');
-    }
-
-    const isStreetSearch = !!street;
-    const seen  = new Set();
-    places = [];
-
-    for (const p of raw) {
-      const name = (p.title || '').trim();
-      if (!name || seen.has(name.toLowerCase())) continue;
-      seen.add(name.toLowerCase());
-      const loc = p.location || {};
-      if (!loc.lat || !loc.lng) continue;
-
-      // Street mode: use Google's raw categoryName so ALL business types appear.
-      // Suburb mode: match back to our TRADES label via the search query keyword.
-      let category;
-      if (isStreetSearch) {
-        category = p.categoryName || 'Other';
-      } else {
+      const seen = new Set();
+      places = [];
+      for (const p of raw) {
+        const name = (p.title || '').trim();
+        if (!name || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        const loc = p.location || {};
+        if (!loc.lat || !loc.lng) continue;
         const search = (p.searchString || '').toLowerCase();
-        category = 'Other';
+        let category = 'Other';
         for (const [label, , matchKey] of TRADES) {
           if (search.includes(matchKey.toLowerCase())) { category = label; break; }
         }
+        const ownerRaw = p.ownerName || (typeof p.owner === 'object' ? p.owner?.name : p.owner) || '';
+        const parsed   = p.addressParsed || {};
+        places.push({
+          name,
+          street:      p.street       || parsed.street    || '',
+          suburb:      p.city         || parsed.city       || '',
+          postcode:    p.postalCode   || parsed.postalCode || '',
+          state:       p.state        || parsed.state      || '',
+          phone:       p.phone        || '',
+          website:     p.website      || '',
+          rating:      p.totalScore   || '',
+          owner:       ownerRaw,
+          category,
+          fullAddress: p.address      || '',
+          lat: loc.lat, lng: loc.lng,
+        });
       }
-
-      const ownerRaw = p.ownerName || (typeof p.owner === 'object' ? p.owner?.name : p.owner) || '';
-      const parsed   = p.addressParsed || {};
-      places.push({
-        name,
-        street:   p.street          || parsed.street    || '',
-        suburb:   p.city            || parsed.city       || '',
-        postcode: p.postalCode      || parsed.postalCode || '',
-        state:    p.state           || parsed.state      || '',
-        phone:    p.phone           || '',
-        website:  p.website         || '',
-        rating:   p.totalScore      || '',
-        owner:    ownerRaw,
-        category,
-        fullAddress: p.address      || '',   // fallback for street filter
-        lat: loc.lat,
-        lng: loc.lng,
-      });
     }
 
-    // isStreetMode controls sidebar title only; both modes now use TRADES categorisation
+    // Street filter and render
     if (street) {
       // Use the first word of the street name as the match keyword.
       // e.g. "Aldinga Street" → "aldinga", "Terrence Road" → "terrence"
