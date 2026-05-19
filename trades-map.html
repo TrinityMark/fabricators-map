@@ -114,6 +114,8 @@
     /* Key modal */
     #key-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
     #key-modal.active { display: flex; }
+    #abn-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
+    #abn-modal.active { display: flex; }
     .key-box { background: #fff; border-radius: 10px; padding: 28px 32px; width: 420px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
     .key-box h2 { font-size: 1rem; margin-bottom: 8px; color: #1a1a2e; }
     .key-box p  { font-size: 0.82rem; color: #555; margin-bottom: 14px; line-height: 1.5; }
@@ -139,6 +141,18 @@
     <div class="row">
       <button class="btn" style="background:#ddd;color:#333;" onclick="closeKeyModal()">Cancel</button>
       <button class="btn btn-go" onclick="saveKey()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="abn-modal">
+  <div class="key-box">
+    <h2>ABN Lookup GUID</h2>
+    <p>Enter your ABN Lookup web services GUID. Used to find businesses by street address and enrich owner names from the Australian Business Register. Register free at <a href="https://abr.business.gov.au/Tools/WebServices" target="_blank">abr.business.gov.au</a>.</p>
+    <input type="password" id="abn-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+    <div class="row">
+      <button class="btn" style="background:#ddd;color:#333;" onclick="closeAbnModal()">Cancel</button>
+      <button class="btn btn-go" onclick="saveAbnGuid()">Save</button>
     </div>
   </div>
 </div>
@@ -171,6 +185,7 @@
     <button class="btn btn-go" id="btn-go" onclick="runSearch()">Go</button>
 <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
     <button class="btn btn-key" onclick="promptApiKey()">&#9881; API Key</button>
+    <button class="btn btn-key" onclick="promptAbnGuid()" id="btn-abn" title="ABN Lookup GUID">&#127462;&#127482; ABN</button>
   </div>
 </header>
 
@@ -504,6 +519,30 @@ async function runSearch() {
       }
     }
 
+    // ── ABN enrichment (street mode only, if GUID is set) ──────
+    const abnGuid = getAbnGuid();
+    if (street && abnGuid) {
+      // Pass 4: find businesses in the ABN register not returned by Google
+      const seenNames = new Set(places.map(p => p.name.toLowerCase()));
+      const postcode  = places.find(p => p.postcode)?.postcode || '4500';
+      const abnPlaces = await abnStreetSearch(street, suburb, postcode, seenNames, abnGuid);
+
+      // Geocode any ABN-only businesses so they can be placed on the map
+      for (const p of abnPlaces) {
+        try {
+          const c = await geocode(`${p.street} ${p.suburb} Australia`);
+          p.lat = c.lat; p.lng = c.lng;
+        } catch (e) {
+          // Use suburb centre if geocode fails
+          p.lat = center.lat; p.lng = center.lng;
+        }
+      }
+      places = places.concat(abnPlaces.filter(p => p.lat && p.lng));
+
+      // Enrich owner names for all places
+      await abnEnrichOwners(places, abnGuid);
+    }
+
     renderResults(places, locationLabel, !!street);
     document.getElementById('btn-csv').disabled = places.length === 0;
   } catch (err) {
@@ -770,6 +809,112 @@ function onStreetOrSuburbChange() {
   const hasStreet = document.getElementById('inp-street').value.trim().length > 0;
   // Hide the trade-category picker when a street is entered (all types returned)
   document.getElementById('picker-wrap').style.display = hasStreet ? 'none' : '';
+}
+
+// ── ABN Lookup ─────────────────────────────────────────────
+function getAbnGuid() { return localStorage.getItem('abn_guid') || ''; }
+function setAbnGuid(g) { localStorage.setItem('abn_guid', g); }
+
+function promptAbnGuid() {
+  document.getElementById('abn-input').value = getAbnGuid();
+  document.getElementById('abn-modal').classList.add('active');
+  setTimeout(() => document.getElementById('abn-input').focus(), 50);
+}
+function closeAbnModal() { document.getElementById('abn-modal').classList.remove('active'); }
+function saveAbnGuid() {
+  const v = document.getElementById('abn-input').value.trim();
+  if (!v) { alert('Please enter your ABN GUID.'); return; }
+  setAbnGuid(v); closeAbnModal();
+  alert('ABN GUID saved. Street searches will now include ABN register results.');
+}
+document.getElementById('abn-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('abn-modal')) closeAbnModal();
+});
+
+// Fetch via CORS proxy if direct fetch fails (ABN API may not have CORS headers)
+async function abnFetch(url) {
+  try {
+    const r = await fetch(url);
+    if (r.ok) return r.json();
+  } catch (e) { /* try proxy */ }
+  const proxy = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+  const r2 = await fetch(proxy);
+  if (!r2.ok) throw new Error('ABN fetch failed: ' + r2.status);
+  return r2.json();
+}
+
+// Search ABN register by postcode, filter to street keyword, return places not already seen
+async function abnStreetSearch(street, suburb, postcode, seenNames, guid) {
+  if (!guid) return [];
+  const keyword = street.toLowerCase().split(/\s+/)[0];
+  const pc = postcode || '4500'; // fallback to Brendale postcode
+
+  setStatus(`ABN register: searching postcode ${pc} for ${street}…`);
+  const url = `https://abr.business.gov.au/json/MatchingNames.aspx?name=${encodeURIComponent(street)}&guid=${guid}&postcode=${pc}&activeABNsOnly=true`;
+
+  let names;
+  try { names = (await abnFetch(url)).Names || []; }
+  catch (e) { console.warn('ABN street search failed:', e); return []; }
+
+  const newPlaces = [];
+  for (const n of names) {
+    if (seenNames.has(n.Name.toLowerCase())) continue;
+    // Get full details to check registered address
+    try {
+      const det = await abnFetch(`https://abr.business.gov.au/json/AbnDetails.aspx?abn=${n.Abn}&guid=${guid}`);
+      const addr = ((det.AddressPostcode || '') + ' ' + (det.AddressState || '') + ' ' + (det.AddressLine1 || '')).toLowerCase();
+      if (!addr.includes(keyword)) continue; // not on this street
+      const name = det.EntityName || n.Name;
+      if (seenNames.has(name.toLowerCase())) continue;
+      seenNames.add(name.toLowerCase());
+      newPlaces.push({
+        name,
+        street:      det.AddressLine1 || '',
+        suburb:      det.AddressSuburb || suburb,
+        postcode:    det.AddressPostcode || pc,
+        state:       det.AddressState || 'QLD',
+        phone:       '',
+        website:     '',
+        rating:      '',
+        owner:       det.EntityTypeCode === 'IND' ? name : '',
+        category:    'ABN Register',
+        fullAddress: `${det.AddressLine1 || ''}, ${det.AddressSuburb || suburb} ${det.AddressState || 'QLD'} ${det.AddressPostcode || pc}`,
+        abn:         n.Abn,
+        lat: null, lng: null, // no coords from ABN — geocode separately
+      });
+    } catch (e) { /* skip this one */ }
+    await sleep(120); // gentle rate limiting
+  }
+  return newPlaces;
+}
+
+// Enrich existing places with owner name from ABN register
+async function abnEnrichOwners(places, guid) {
+  if (!guid || !places.length) return;
+  let enriched = 0;
+  for (let i = 0; i < places.length; i++) {
+    if (places[i].owner) continue; // already have an owner
+    setStatus(`ABN owner lookup ${i + 1}/${places.length}: ${places[i].name}`);
+    try {
+      const url = `https://abr.business.gov.au/json/MatchingNames.aspx?name=${encodeURIComponent(places[i].name)}&guid=${guid}&activeABNsOnly=true`;
+      const data = await abnFetch(url);
+      const names = (data.Names || []).filter(n => n.State === 'QLD' || !n.State);
+      if (!names.length) continue;
+      // Prefer same postcode, else take highest score
+      const match = names.find(n => n.Postcode === places[i].postcode) || names[0];
+      // Get full details for entity type
+      const det = await abnFetch(`https://abr.business.gov.au/json/AbnDetails.aspx?abn=${match.Abn}&guid=${guid}`);
+      if (det.EntityTypeCode === 'IND') { // Individual / Sole Trader
+        places[i].owner = det.EntityName || match.Name;
+        places[i].abn   = match.Abn;
+        enriched++;
+      } else if (det.EntityName) {
+        places[i].abn = match.Abn; // store ABN even for companies
+      }
+    } catch (e) { /* skip */ }
+    await sleep(150);
+  }
+  setStatus(`ABN enrichment done — ${enriched} owner name${enriched !== 1 ? 's' : ''} found.`);
 }
 
 // ── Key modal ──────────────────────────────────────────────
