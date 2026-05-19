@@ -114,8 +114,10 @@
     /* Key modal */
     #key-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
     #key-modal.active { display: flex; }
-    #abn-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
-    #abn-modal.active { display: flex; }
+    #abn-modal  { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
+    #abn-modal.active  { display: flex; }
+    #here-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; }
+    #here-modal.active { display: flex; }
     .key-box { background: #fff; border-radius: 10px; padding: 28px 32px; width: 420px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
     .key-box h2 { font-size: 1rem; margin-bottom: 8px; color: #1a1a2e; }
     .key-box p  { font-size: 0.82rem; color: #555; margin-bottom: 14px; line-height: 1.5; }
@@ -157,6 +159,18 @@
   </div>
 </div>
 
+<div id="here-modal">
+  <div class="key-box">
+    <h2>HERE Places API Key</h2>
+    <p>Enter your HERE API key. Used to find every business near a street regardless of type — catches businesses that Google Maps search misses. Get a free key (250k requests/month) at <a href="https://developer.here.com" target="_blank">developer.here.com</a>.</p>
+    <input type="password" id="here-input" placeholder="your-here-api-key" />
+    <div class="row">
+      <button class="btn" style="background:#ddd;color:#333;" onclick="closeHereModal()">Cancel</button>
+      <button class="btn btn-go" onclick="saveHereKey()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="overlay">
   <div class="spinner"></div>
   <div id="status-msg">Starting&hellip;</div>
@@ -186,7 +200,8 @@
 <button class="btn btn-csv" id="btn-csv" onclick="saveCSV()" disabled>&#11123; Save CSV</button>
     <button class="btn btn-key" onclick="promptApiKey()">&#9881; API Key</button>
     <button class="btn btn-key" onclick="promptAbnGuid()" id="btn-abn" title="ABN Lookup GUID">&#127462;&#127482; ABN</button>
-    <span style="font-size:0.7rem;color:#555;white-space:nowrap;">v1.2</span>
+    <button class="btn btn-key" onclick="promptHereKey()" id="btn-here" title="HERE Places API Key">&#128205; HERE</button>
+    <span style="font-size:0.7rem;color:#555;white-space:nowrap;">v1.3</span>
   </div>
 </header>
 
@@ -362,6 +377,7 @@ async function runSearch() {
     map.setView([center.lat, center.lng], street ? 15 : 13);
 
     let places;
+    let streetCenter = center; // may be updated to precise street coords below
     const isStreetSearch = !!street;
 
     if (street) {
@@ -382,7 +398,7 @@ async function runSearch() {
       // All three are merged, deduplicated, then filtered to this street.
 
       // Try to geocode the street precisely; fall back to suburb centre
-      let streetCenter = center;
+      streetCenter = center;
       try {
         setStatus(`Locating ${street}…`);
         streetCenter = await geocode(`${street} ${suburb} Australia`);
@@ -517,6 +533,30 @@ async function runSearch() {
           alert('No results had "' + street + '" in their address.\nShowing all ' + unfiltered.length + ' nearby results instead.');
           places = unfiltered;
         }
+      }
+    }
+
+    // ── HERE Places pass (street mode, if key is set) ──────────
+    // Fetches every establishment within 400m of the street centre —
+    // not search-ranked, so catches businesses Google Maps misses.
+    const hereKey = getHereKey();
+    if (street && hereKey) {
+      try {
+        setStatus(`HERE Places: scanning all businesses within 400m of ${street}…`);
+        const hereItems  = await hereBrowse(streetCenter.lat, streetCenter.lng, 400, hereKey);
+        setStatus(`HERE returned ${hereItems.length} raw places — filtering to ${street}…`);
+        const keyword    = street.toLowerCase().split(/\s+/)[0];
+        const suburbLow  = suburb.toLowerCase();
+        const herePlaces = herePlacesToPlaces(hereItems, keyword, suburbLow);
+        // Merge: add only those not already in our Google results
+        const existingNames = new Set(places.map(p => p.name.toLowerCase()));
+        const newFromHere   = herePlaces.filter(p => !existingNames.has(p.name.toLowerCase()));
+        setStatus(`HERE Places: ${newFromHere.length} new businesses not found by Google`);
+        places = places.concat(newFromHere);
+      } catch (e) {
+        console.warn('HERE Places failed:', e.message);
+        setStatus(`HERE Places unavailable — proceeding with Google results only`);
+        await sleep(1500);
       }
     }
 
@@ -792,6 +832,88 @@ function onStreetOrSuburbChange() {
   const hasStreet = document.getElementById('inp-street').value.trim().length > 0;
   // Hide the trade-category picker when a street is entered (all types returned)
   document.getElementById('picker-wrap').style.display = hasStreet ? 'none' : '';
+}
+
+// ── HERE Places API ────────────────────────────────────────
+function getHereKey() { return localStorage.getItem('here_key') || ''; }
+function setHereKey(k) { localStorage.setItem('here_key', k); }
+
+function promptHereKey() {
+  document.getElementById('here-input').value = getHereKey();
+  document.getElementById('here-modal').classList.add('active');
+  setTimeout(() => document.getElementById('here-input').focus(), 50);
+}
+function closeHereModal() { document.getElementById('here-modal').classList.remove('active'); }
+function saveHereKey() {
+  const v = document.getElementById('here-input').value.trim();
+  if (!v) { alert('Please enter your HERE API key.'); return; }
+  setHereKey(v); closeHereModal();
+  alert('HERE API key saved. Street searches will now use HERE Places for complete coverage.');
+}
+document.getElementById('here-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('here-modal')) closeHereModal();
+});
+
+// Fetch all places near a point using HERE Browse API.
+// Returns every establishment within radiusMeters regardless of business type.
+async function hereBrowse(lat, lng, radiusMeters, apiKey) {
+  const allItems = [];
+  let nextUrl = `https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&limit=100&radius=${radiusMeters}&apiKey=${apiKey}`;
+  // Follow pagination (HERE returns up to 100 per page)
+  while (nextUrl) {
+    const r = await fetch(nextUrl);
+    if (!r.ok) throw new Error(`HERE API error ${r.status}: ` + (await r.text()).slice(0, 200));
+    const data = await r.json();
+    allItems.push(...(data.items || []));
+    nextUrl = data.next || null;
+    if (nextUrl && !nextUrl.includes('apiKey')) nextUrl += `&apiKey=${apiKey}`;
+  }
+  return allItems;
+}
+
+// Convert HERE place items to our internal place format
+function herePlacesToPlaces(items, streetKeyword, suburbLower) {
+  const places = [];
+  const seen   = new Set();
+  for (const item of items) {
+    const name = (item.title || '').trim();
+    if (!name || seen.has(name.toLowerCase())) continue;
+
+    const addr     = item.address || {};
+    const streetFl = ((addr.houseNumber || '') + ' ' + (addr.street || '')).trim();
+    const fullAddr = addr.label || '';
+    const suburb   = addr.city || addr.district || '';
+    const addrCheck = (streetFl + ' ' + fullAddr).toLowerCase();
+
+    // Apply same street + suburb filter
+    if (!addrCheck.includes(streetKeyword)) continue;
+    const suburbCheck = suburb.toLowerCase();
+    if (suburbCheck && !suburbCheck.includes(suburbLower) && !suburbLower.includes(suburbCheck)) continue;
+
+    seen.add(name.toLowerCase());
+    const contacts = (item.contacts || [])[0] || {};
+    const phone    = (contacts.phone || [])[0]?.value || '';
+    const website  = (contacts.www   || [])[0]?.value || '';
+    const category = (item.categories || [])[0]?.name || 'Other';
+    const pos      = item.position   || {};
+
+    places.push({
+      name,
+      street:      streetFl,
+      suburb:      suburb,
+      postcode:    addr.postalCode || '',
+      state:       addr.stateCode  || '',
+      phone,
+      website,
+      rating:      '',
+      owner:       '',
+      category,
+      fullAddress: fullAddr,
+      source:      'HERE',
+      lat: pos.lat, lng: pos.lng,
+    });
+  }
+  return places;
 }
 
 // ── ABN Lookup ─────────────────────────────────────────────
