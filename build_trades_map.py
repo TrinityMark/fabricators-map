@@ -1,5 +1,5 @@
 ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj'
-VERSION    = 'v1.3'
+VERSION    = 'v1.4'
 
 # (label, google_maps_search_query, unique_match_keyword)
 # search_query  → sent to Google Maps as the search string
@@ -758,7 +758,7 @@ function saveCSV() {
   if (!allPlaces.length) return;
 
   const TRINITY_OFFICE = 'Brendale';
-  const CONTACT_OWNER  = 'businessmanager@trinityadvisory.com.au';
+  const CONTACT_OWNER  = 'Mike Bygrave';
 
   // ── Contact section columns ──────────────────────────────
   // ── Company section columns ──────────────────────────────
@@ -809,9 +809,17 @@ function saveCSV() {
     const firstName  = ownerParts.length > 0 && ownerParts[0] ? ownerParts[0] : 'There';
     const lastName   = ownerParts.length > 1 ? ownerParts.slice(1).join(' ') : '';
 
-    // Unique email per row — prevents CRM merging records on same address
-    const guid  = crypto.randomUUID();
-    const email = `notfound_${guid}@business.com.au`;
+    // Email: derived from the business's own website domain when known,
+    // otherwise a random guid so the CRM doesn't merge unrelated "not found" records.
+    let email;
+    if (p.website) {
+      let domain;
+      try { domain = new URL(p.website).hostname; }
+      catch (e) { domain = p.website.replace(/^https?:\/\//i, '').replace(/\/.*$/, ''); }
+      email = `blank@${domain}`;
+    } else {
+      email = `${crypto.randomUUID()}@notfound.com`;
+    }
 
     const company = csv(p.name);
     const website = csv(p.website  || 'https://notfound.com.au');
@@ -836,9 +844,9 @@ function saveCSV() {
       'Australia',
       phone,
       csv(email),
-      'Direct Sales',
+      'Cake Drops',
       'Offline Sources',
-      'Tepid Lead',
+      'Lead',
       'New',
       'Lead',
       csv(CONTACT_OWNER),
