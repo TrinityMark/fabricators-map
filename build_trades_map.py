@@ -1,5 +1,5 @@
 ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj'
-VERSION    = 'v1.4'
+VERSION    = 'v1.5'
 
 # (label, google_maps_search_query, unique_match_keyword)
 # search_query  → sent to Google Maps as the search string
@@ -339,6 +339,16 @@ function getSelectedTrades() {
 function getToken() { return localStorage.getItem('apify_token') || ''; }
 function setToken(t) { localStorage.setItem('apify_token', t); }
 
+// Pick the match keyword out of a street name: the first word that's
+// specific enough to filter on (≥3 chars), skipping directional/type
+// abbreviations like "S", "N", "Mt" that Google/HERE data often uses
+// in place of "South", "North", "Mount" — e.g. "S Pine Road" → "pine",
+// not "s" (which would match every business near the search point).
+function streetKeyword(street) {
+  const words = street.toLowerCase().split(/\s+/).filter(Boolean);
+  return words.find(w => w.length >= 3) || words[0] || '';
+}
+
 // ── Map ────────────────────────────────────────────────────
 const map = L.map('map').setView([-27.33, 152.99], 12);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -558,11 +568,8 @@ async function runSearch() {
 
     // Street filter and render
     if (street) {
-      // Use the first word of the street name as the match keyword.
-      // e.g. "Aldinga Street" → "aldinga", "Terrence Road" → "terrence"
-      // This handles abbreviations: "Aldinga St" and "Aldinga Street" both contain "aldinga".
       // Check both the parsed street field and the full address string as fallback.
-      const keyword     = street.toLowerCase().split(/\s+/)[0];
+      const keyword     = streetKeyword(street);
       const suburbLower = suburb.toLowerCase();
       if (keyword && keyword.length >= 3) {
         const unfiltered = places;
@@ -592,7 +599,7 @@ async function runSearch() {
         setStatus(`HERE Places: scanning all businesses within 400m of ${street}…`);
         const hereItems  = await hereBrowse(streetCenter.lat, streetCenter.lng, 400, hereKey);
         setStatus(`HERE returned ${hereItems.length} raw places — filtering to ${street}…`);
-        const keyword    = street.toLowerCase().split(/\s+/)[0];
+        const keyword    = streetKeyword(street);
         const suburbLow  = suburb.toLowerCase();
         const herePlaces = herePlacesToPlaces(hereItems, keyword, suburbLow);
         // Merge: add only those not already in our Google results
