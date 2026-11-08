@@ -1,5 +1,5 @@
 ACTOR_MAPS = 'nwua9Gu5YrADL7ZDj'
-VERSION    = 'v1.5'
+VERSION    = 'v1.6'
 
 # (label, google_maps_search_query, unique_match_keyword)
 # search_query  → sent to Google Maps as the search string
@@ -351,9 +351,9 @@ function streetKeyword(street) {
 
 // ── Map ────────────────────────────────────────────────────
 const map = L.map('map').setView([-27.33, 152.99], 12);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains: 'abcd', maxZoom: 19,
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom: 19,
 }).addTo(map);
 
 function makeIcon(color) {

@@ -201,7 +201,7 @@
     <button class="btn btn-key" onclick="promptApiKey()">&#9881; API Key</button>
     <button class="btn btn-key" onclick="promptAbnGuid()" id="btn-abn" title="ABN Lookup GUID">&#127462;&#127482; ABN</button>
     <button class="btn btn-key" onclick="promptHereKey()" id="btn-here" title="HERE Places API Key">&#128205; HERE</button>
-    <span style="font-size:0.7rem;color:#555;white-space:nowrap;">v1.5</span>
+    <span style="font-size:0.7rem;color:#555;white-space:nowrap;">v1.6</span>
   </div>
 </header>
 
@@ -304,9 +304,9 @@ function streetKeyword(street) {
 
 // ── Map ────────────────────────────────────────────────────
 const map = L.map('map').setView([-27.33, 152.99], 12);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains: 'abcd', maxZoom: 19,
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom: 19,
 }).addTo(map);
 
 function makeIcon(color) {
